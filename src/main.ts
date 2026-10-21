@@ -7,7 +7,8 @@ import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import './style.css';
 import { genome, type TraitKey } from './data';
-import { setLevelOpacity, type Level } from './levels/common';
+import { setLevelDiff, setLevelOpacity, type Level } from './levels/common';
+import { diff, PROFILES, type EyeColor } from './eyeColor';
 import { buildChromosomeLevel, buildGenomeLevel } from './levels/chromosome';
 import { buildRegionLevel } from './levels/region';
 import { buildGeneLevel } from './levels/gene';
@@ -145,6 +146,21 @@ function disposeLevels() {
   }
 }
 
+// Eye colour: the selected example genotype, and the one it was compared against.
+let eyeColor: EyeColor = 'brown';
+let eyePrevious: EyeColor | null = null;
+
+/** Light up the SNPs that differ between the previous and current eye colour, at every level. */
+function applyEye() {
+  if (traitKey !== 'eye') return;
+  const changes = eyePrevious ? diff(PROFILES[eyePrevious], PROFILES[eyeColor]) : new Map();
+  const html = new Map<string, string>();
+  for (const c of changes.values()) html.set(c.id, `<b>${c.gene}</b><span>${c.from.join('')} → ${c.to.join('')}</span>`);
+  for (const l of levels) setLevelDiff(l, html);
+  (levels[4] as BasesLevel).setAllele(PROFILES[eyeColor].rs12913832[0]);
+  ui.setEye(eyeColor, eyePrevious, changes);
+}
+
 function setTrait(k: TraitKey) {
   disposeLevels();
   traitKey = k;
@@ -152,6 +168,7 @@ function setTrait(k: TraitKey) {
   for (const l of levels) world.add(l.group);
   prevLog = logZoom(t);
   ui.setTrait(TRAITS[k]);
+  applyEye();
   shownLevel = -1;
 }
 
@@ -244,6 +261,12 @@ const ui = createUI({
   onLevel(i) {
     target = i;
     lastInput = performance.now();
+  },
+  onEyeColor(c) {
+    if (c === eyeColor) return;
+    eyePrevious = eyeColor;
+    eyeColor = c;
+    applyEye();
   },
   onAllele(b) {
     (levels[4] as BasesLevel).setAllele(b);

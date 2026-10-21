@@ -27,6 +27,8 @@ export interface Level {
   opacity: number;
   /** Shader uniforms for the dissolve circle; radius (-2, -1) disables it. */
   portal: { center: { value: THREE.Vector2 }; radius: { value: THREE.Vector2 } };
+  /** Markers that light up while one of their SNPs differs from the previous selection. */
+  diffs: DiffMarker[];
   update?(time: number, dt: number): void;
 }
 
@@ -41,6 +43,8 @@ export const BASE_COLORS: Record<string, string> = {
 export const ACCENT = '#3ee0ff';
 export const ACCENT_2 = '#ffb547';
 export const NEUTRAL = '#4a5276';
+/** Colour for DNA that changed in the current comparison. */
+export const DIFF = '#ff4fd8';
 
 const STAIN: Record<string, string> = {
   gneg: '#dcd6f2',
@@ -64,7 +68,7 @@ export function stainWeight(stain: string): number {
 }
 
 export function newLevel(name: string, span: number): Level {
-  return { name, group: new THREE.Group(), anchor: new THREE.Vector3(), childScale: 0.1, engulf: 1, span, materials: [], labels: [], pulses: [], opacity: 1,
+  return { name, group: new THREE.Group(), anchor: new THREE.Vector3(), childScale: 0.1, engulf: 1, span, materials: [], labels: [], pulses: [], opacity: 1, diffs: [],
     portal: { center: { value: new THREE.Vector2() }, radius: { value: new THREE.Vector2(-2, -1) } } };
 }
 
@@ -121,7 +125,7 @@ export function setLevelOpacity(level: Level, a: number, glowA = a, labelA = a):
     m.depthWrite = depth && a > 0.97;
   }
   for (const l of level.labels) {
-    l.visible = visible && labelA > 0.02;
+    l.visible = visible && labelA > 0.02 && !l.userData.hidden;
     l.element.style.opacity = String(Math.min(1, labelA));
   }
 }
@@ -174,4 +178,38 @@ export function geneColor(name: string, focus: string[]): THREE.Color {
   let h = 0;
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   return new THREE.Color().setHSL(0.6 + ((h % 1000) / 1000) * 0.35, 0.35, 0.58);
+}
+
+export interface DiffMarker {
+  ids: string[];
+  ring: THREE.Object3D;
+  label: CSS2DObject;
+}
+
+/**
+ * Add a hidden diff marker (a pulsing ring plus a label) for one or more SNPs at `pos` under `parent`.
+ * The label sits `dx` to the side of the ring; a negative dx right-aligns it on the left.
+ */
+export function addDiffMarker(level: Level, parent: THREE.Object3D, ids: string[], pos: THREE.Vector3, radius: number, dx: number, dy = 0): void {
+  const r = ring(radius, Math.max(0.012, radius * 0.06), DIFF);
+  r.position.copy(pos);
+  r.userData.pulse = true;
+  r.visible = false;
+  parent.add(r);
+  const l = label('', 'callout diff', true);
+  l.center.set(dx < 0 ? 1 : 0, 0.5);
+  l.position.copy(pos).add(new THREE.Vector3(dx, dy, 0));
+  l.userData.hidden = true;
+  parent.add(l);
+  level.diffs.push({ ids, ring: r, label: l });
+}
+
+/** Show markers whose SNPs are in `changes` (id -> label HTML) and hide the rest. */
+export function setLevelDiff(level: Level, changes: Map<string, string>): void {
+  for (const d of level.diffs) {
+    const html = d.ids.filter((id) => changes.has(id)).map((id) => changes.get(id)).join('');
+    d.ring.visible = html !== '';
+    d.label.userData.hidden = html === '';
+    d.label.element.innerHTML = html;
+  }
 }

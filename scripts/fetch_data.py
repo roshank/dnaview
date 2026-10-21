@@ -21,6 +21,15 @@ TRAITS = {
         "focusGenes": ["OCA2", "HERC2"],
         "variant": {"id": "rs12913832", "pos": 28_120_471, "gene": "HERC2"},  # 0-based
         "relatedGenes": ["IRF4", "SLC24A4", "TYR", "SLC45A2", "TYRP1"],
+        # The six IrisPlex eye-colour SNPs: (id, gene, chrom, 0-based position).
+        "panel": [
+            ("rs12913832", "HERC2", "15", 28_120_471),
+            ("rs1800407", "OCA2", "15", 27_985_171),
+            ("rs12896399", "SLC24A4", "14", 92_307_318),
+            ("rs16891982", "SLC45A2", "5", 33_951_587),
+            ("rs1393350", "TYR", "11", 89_277_877),
+            ("rs12203592", "IRF4", "6", 396_320),
+        ],
     },
     "lactose": {
         "chrom": "2",
@@ -139,6 +148,12 @@ def main():
             "genes": genes,
             "related": [locate(s) for s in t["relatedGenes"]],
         }
+        if t.get("panel"):
+            out["panel"] = []
+            for rs, gene_name, pc, pos in t["panel"]:
+                snp = next(x for x in track("dbSnp155Common", pc, pos, pos + 1) if x["name"] == rs)
+                out["panel"].append({"id": rs, "gene": gene_name, "chrom": pc, "pos": snp["chromStart"],
+                                     "ref": snp["ref"], "alts": [a for a in snp["alts"].split(",") if a]})
         if t["variant"]:
             v = dict(t["variant"])
             center = v["pos"]

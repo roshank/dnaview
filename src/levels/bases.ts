@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { COMPLEMENT, type TraitData } from '../data';
-import { ACCENT, BASE_COLORS, collect, label, newLevel, ring, type Level } from './common';
+import { ACCENT, addDiffMarker, BASE_COLORS, collect, label, newLevel, ring, type Level } from './common';
 import { H4 } from './gene';
 
 const R = 1.0;
@@ -124,6 +124,10 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
   callout.center.set(1, 0.5);
   callout.position.set(-R * 1.9, hy, 0);
   level.group.add(callout);
+
+  if (t.variant && t.panel?.some((v) => v.id === t.variant!.id)) {
+    addDiffMarker(level, level.group, [t.variant.id], new THREE.Vector3(0, hy, 0), R * 1.85, -R * 1.9, -1.3);
+  }
 
   const paint = () => {
     for (const { i, top, bottom } of hlMeshes) {
