@@ -12,6 +12,11 @@ export interface Level {
   childScale: number;
   /** Radius of the geometry around the anchor; once magnified past the view it must be faded out. */
   engulf: number;
+  /**
+   * Native half-width of a thin level. When set, the level is widened while it is still small during
+   * a zoom so it doesn't shrink to a hairline, easing back to true proportions as it arrives.
+   */
+  radius?: number;
   /** Number of base pairs spanned by the level's natural view height, for the scale readout. */
   span: number;
   materials: { m: THREE.Material; base: number; glow: boolean; depth: boolean }[];
@@ -75,7 +80,8 @@ function addPortal(m: THREE.Material, level: Level) {
       .replace('void main() {', 'uniform vec2 portalCenter;\nuniform vec2 portalRadius;\nvoid main() {')
       .replace(
         '#include <dithering_fragment>',
-        '#include <dithering_fragment>\ngl_FragColor.a *= smoothstep(portalRadius.x, portalRadius.y, distance(gl_FragCoord.xy, portalCenter));',
+        // Discard (not just hide) dissolved fragments so they don't write depth over the next level.
+        '#include <dithering_fragment>\ngl_FragColor.a *= smoothstep(portalRadius.x, portalRadius.y, distance(gl_FragCoord.xy, portalCenter));\nif (gl_FragColor.a < 0.02) discard;',
       );
   };
 }

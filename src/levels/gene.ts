@@ -44,12 +44,12 @@ export function buildGeneLevel(t: TraitData): Level {
         return out.set(Math.cos(a) * 0.07 + wobble, H3 / 2 - u * H3, Math.sin(a) * 0.07);
       }
     }
-    const geo = new THREE.TubeGeometry(new Strand(), 1800, 0.026, 6, false);
+    const geo = new THREE.TubeGeometry(new Strand(), 1800, 0.038, 6, false);
     const pos = geo.attributes.position;
     const col = new Float32Array(pos.count * 3);
     for (let i = 0; i < pos.count; i++) strandColor(posAtY(pos.getY(i))).toArray(col, i * 3);
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    dna.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, emissive: '#151a33' })));
+    dna.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, emissive: '#2a3366' })));
   }
 
   // Sparse nucleosome beads: active genes are loosely packed.
@@ -75,7 +75,7 @@ export function buildGeneLevel(t: TraitData): Level {
     const col = geneColor(g.name, t.focusGenes);
     const body = new THREE.Mesh(
       new THREE.CylinderGeometry(0.17, 0.17, y(a) - y(b), 32, 1, true),
-      new THREE.MeshBasicMaterial({ color: col, opacity: 0.1, depthWrite: false, side: THREE.DoubleSide }),
+      new THREE.MeshBasicMaterial({ color: col, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide }),
     );
     body.position.y = (y(a) + y(b)) / 2;
     level.group.add(body);
@@ -157,6 +157,7 @@ export function buildGeneLevel(t: TraitData): Level {
   level.anchor.set(0, y(center), 0);
   level.childScale = ((t.sequence.bases.length / len) * H3) / H4;
   level.engulf = 0.3;
+  level.radius = 0.3;
   collect(level);
   level.update = (_time, dt) => {
     dna.rotation.y += dt * 0.25;
