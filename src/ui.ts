@@ -1,15 +1,21 @@
-import { COMPLEMENT, genome, type TraitKey } from './data';
+import { COMPLEMENT, genome, highlightIndices, type TraitKey } from './data';
 import { PROFILES, type Change, type EyeColor } from './eyeColor';
 import { createEyeStudio } from './eyePanel';
 import { fmtShort } from './levels/common';
-import { TRAITS, type Trait } from './traits';
+import type { PanelSnp, PickerSpec } from './picker';
+import { createPickerPanel } from './pickerPanel';
+import { DECIDES, LETTER, TRAITS, type Trait } from './traits';
 
 interface Handlers {
   onTrait(k: TraitKey): void;
   onLevel(i: number): void;
   onAllele(base: string): void;
   onEyeColor(c: EyeColor): void;
+  onPick(key: string): void;
 }
+
+/** Five pips, the first `n` lit. */
+const pips = (n: number) => `<span class="pips">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
 
 const LEVEL_KINDS = ['Genome', 'Chromosome', 'Region', 'Gene', 'Base pairs'];
 
@@ -25,6 +31,7 @@ export function createUI(h: Handlers) {
       <div class="panel-inner">
         <div class="eyebrow"></div>
         <h1></h1>
+        <div class="influence"></div>
         <p class="body"></p>
         <dl class="facts"></dl>
         <div class="alleles" hidden><span>Try each version:</span><div class="opts"></div></div>
@@ -51,11 +58,14 @@ export function createUI(h: Handlers) {
   let eyeAllele = '';
   const studio = createEyeStudio(h.onEyeColor);
   $('.facts').after(studio.el);
+  const picker = createPickerPanel(h.onPick);
+  studio.el.after(picker.el);
 
   for (const t of Object.values(TRAITS)) {
     const b = document.createElement('button');
     b.dataset.key = t.key;
-    b.innerHTML = `<b>${t.name}</b><span>${t.tagline}</span>`;
+    b.title = `${t.tagline}. DNA decides it: ${DECIDES[t.influence.decides]}.`;
+    b.innerHTML = `<b>${t.name}</b>${pips(t.influence.decides)}`;
     b.onclick = () => h.onTrait(t.key);
     nav.appendChild(b);
   }
@@ -85,11 +95,9 @@ export function createUI(h: Handlers) {
   function sequenceStrip() {
     const data = genome.traits[trait.key];
     const bases = data.sequence.bases.split('');
-    const hl = data.variant
-      ? [data.variant.pos - data.sequence.start]
-      : [0, 1, 2].map((i) => data.startCodon![0] - data.sequence.start + i);
-    const shownAllele = trait.key === 'eye' ? eyeAllele : allele;
-    if (shownAllele) bases[hl[0]] = shownAllele;
+    const hl = highlightIndices(data);
+    const shownAllele = trait.key === 'eye' || trait.picker ? eyeAllele : allele;
+    if (shownAllele) hl.forEach((i, k) => k < shownAllele.length && (bases[i] = shownAllele[k]));
     const from = 14;
     const to = 50;
     const row = (comp: boolean) =>
@@ -97,7 +105,7 @@ export function createUI(h: Handlers) {
         .slice(from, to)
         .map((b, j) => {
           const ch = comp ? COMPLEMENT[b] : b;
-          return `<i class="b-${ch}${hl.includes(j + from) ? ' hl' : ''}">${ch}</i>`;
+          return `<i class="b-${ch === '-' ? 'gap' : ch}${hl.includes(j + from) ? ' hl' : ''}">${ch === '-' ? '–' : ch}</i>`;
         })
         .join('');
     const pos = (data.sequence.start + from + 1).toLocaleString('en-US');
@@ -111,6 +119,11 @@ export function createUI(h: Handlers) {
     panel.classList.add('in');
     $('.eyebrow').textContent = `${level + 1} / 5 · ${LEVEL_KINDS[level]} · ${trait.name}`;
     $('h1').textContent = text.title;
+    const inf = trait.influence;
+    $('.influence').innerHTML = `
+      <div><span>DNA decides it</span>${pips(inf.decides)}<b>${DECIDES[inf.decides]}</b></div>
+      <div><span>Effect of one letter</span>${pips(inf.letter)}<b>${LETTER[inf.letter]}</b></div>
+      ${level === 0 ? `<p>${inf.summary}</p>` : ''}`;
     $('.body').innerHTML = text.body;
     $('.facts').innerHTML = text.facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
     const showAlleles = level === 4 && !!trait.alleles;
@@ -131,6 +144,7 @@ export function createUI(h: Handlers) {
       }
     }
     studio.el.hidden = trait.key !== 'eye';
+    picker.el.hidden = !trait.picker;
     const seq = $('.seq');
     seq.hidden = level !== 4;
     if (level === 4) seq.innerHTML = sequenceStrip();
@@ -142,6 +156,11 @@ export function createUI(h: Handlers) {
   return {
     setTrait,
     markTrait,
+    setPick(spec: PickerSpec, panel: PanelSnp[], current: string, previous: string | null, changes: Map<string, Change>) {
+      picker.set(spec, panel, current, previous, changes);
+      eyeAllele = spec.profiles[current][spec.helix][0];
+      if (level === 4) $('.seq').innerHTML = sequenceStrip();
+    },
     setEye(current: EyeColor, previous: EyeColor | null, changes: Map<string, Change>) {
       studio.set(current, previous, changes);
       eyeAllele = PROFILES[current].rs12913832[0];

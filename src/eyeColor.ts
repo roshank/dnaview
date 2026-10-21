@@ -1,4 +1,7 @@
 import { genome } from './data';
+import { diff as diffPanel, type Change, type Genotype } from './picker';
+
+export type { Change, Genotype };
 
 /**
  * Eye colour from the six IrisPlex SNPs.
@@ -22,8 +25,6 @@ export const EFFECTS: Record<string, { counted: string; beta: number }> = {
 };
 
 export type EyeColor = 'blue' | 'green' | 'hazel' | 'brown';
-/** Two copies per SNP: [copy on chromosome 1 of the pair, copy on chromosome 2]. */
-export type Genotype = Record<string, [string, string]>;
 
 export const EYE_COLORS: EyeColor[] = ['blue', 'green', 'hazel', 'brown'];
 
@@ -90,20 +91,6 @@ export const SCORE_RANGE: [number, number] = Object.values(EFFECTS).reduce(
   [0, 0],
 );
 
-export interface Change {
-  id: string;
-  gene: string;
-  from: [string, string];
-  to: [string, string];
-}
-
-/** SNPs whose genotype differs between two profiles. */
 export function diff(from: Genotype, to: Genotype): Map<string, Change> {
-  const out = new Map<string, Change>();
-  for (const v of PANEL) {
-    const a = from[v.id];
-    const b = to[v.id];
-    if (a[0] !== b[0] || a[1] !== b[1]) out.set(v.id, { id: v.id, gene: v.gene, from: a, to: b });
-  }
-  return out;
+  return diffPanel(PANEL, from, to);
 }
