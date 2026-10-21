@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { sequenceCenter, type Gene, type TraitData } from '../data';
-import { ACCENT, ACCENT_2, addDiffMarker, collect, fmtShort, geneColor, label, newLevel, NEUTRAL, ring, type Level } from './common';
+import { ACCENT, ACCENT_2, addDiffMarker, clusterSnps, collect, fmtShort, geneColor, label, newLevel, NEUTRAL, ring, type Level } from './common';
 import { geneAt, H3 } from './region';
 
 export const H4 = 16;
@@ -135,7 +135,8 @@ export function buildGeneLevel(t: TraitData): Level {
   let text: string;
   if (t.variant) {
     const v = t.variant;
-    text = `<b>${v.id}</b><span>${v.gene} intron ${v.intron} · a single letter</span>`;
+    const size = v.len > 1 ? `${v.len} letters` : 'a single letter';
+    text = `<b>${v.id}</b><span>${v.gene} ${v.location} · ${size}</span>`;
   } else {
     text = `<b>Start codon</b><span>where the SRY protein begins</span>`;
   }
@@ -154,8 +155,11 @@ export function buildGeneLevel(t: TraitData): Level {
     level.group.add(pl);
   }
 
-  for (const v of t.panel ?? []) {
-    if (v.chrom === t.chrom && v.pos >= w0 && v.pos < w1) addDiffMarker(level, level.group, [v.id], new THREE.Vector3(0, y(v.pos), 0), 0.62, -0.6, -1.0);
+  const inWindow = (t.panel ?? []).filter((v) => v.chrom === t.chrom && v.pos >= w0 && v.pos < w1);
+  for (const g of clusterSnps(inWindow, y, 1.2)) {
+    // The variant's own callout sits on the left at its height, so other markers' labels go right.
+    const isVariant = g.some((v) => v.id === t.variant?.id);
+    addDiffMarker(level, level.group, g.map((v) => v.id), new THREE.Vector3(0, y(g[0].pos), 0), 0.62, isVariant ? -0.6 : 0.62, isVariant ? -1.35 : 0);
   }
 
   level.anchor.set(0, y(center), 0);

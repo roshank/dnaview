@@ -8,11 +8,19 @@ Each level is a 3D structure nested inside its parent. As you zoom, the parent d
 
 Prototype traits:
 
-| Trait | Path |
-|---|---|
-| Eye color | chr15 → 15q13.1 → HERC2 intron 86 enhancer of OCA2 → rs12913832 (A/G) |
-| Lactose tolerance | chr2 → 2q21.3 → MCM6 intron 13, upstream of LCT → rs4988235 (−13910 C>T) |
-| Biological sex | chrY → Yp11.2 → SRY, just past the PAR1 boundary → SRY start codon |
+Traits run from "DNA fully decides it" to "thousands of tiny effects". Each shows a **DNA influence** rating: how much DNA decides the trait, and how much one letter can move it.
+
+| Trait | Path | Influence |
+|---|---|---|
+| Blood type | chr9 → 9q34.2 → ABO → rs8176719 (the missing letter that makes O); picker O/A/B/AB | fully / decisive |
+| Sickle cell | chr11 → 11p15.4 → HBB exon 1 → rs334 (GAG→GTG); picker typical/trait/disease | fully / decisive |
+| Biological sex | chrY → Yp11.2 → SRY, just past the PAR1 boundary → SRY start codon | fully / decisive |
+| Lactose tolerance | chr2 → 2q21.3 → MCM6 intron 13, upstream of LCT → rs4988235 (−13910 C>T) | mostly / large |
+| Eye color | chr15 → 15q13.1 → HERC2 intron 86 enhancer of OCA2 → rs12913832; six-SNP color picker | fully / large |
+| BRCA1 | chr17 → 17q21.31 → BRCA1 exon 2 → 185delAG; picker typical/carrier | a little / large |
+| Height | 21,858 GWAS Catalog hits genome-wide → chr12 → HMGA2 3′ UTR → rs1042725 | mostly / tiny |
+
+Pickers swap in example genotypes and light up every letter that changes, at every zoom level.
 
 ## Run
 
@@ -28,7 +36,7 @@ Controls: scroll or pinch to zoom, drag to rotate, ←/→ to step between level
 
 ## Data
 
-All coordinates, bands, genes, exons, variants and sequence are real GRCh38 (hg38) data, baked into `src/data/genome.json` from the [UCSC Genome Browser API](https://api.genome.ucsc.edu/) (cytoBand, ncbiRefSeqSelect, dbSnp155Common, sequence). To regenerate:
+All coordinates, bands, genes, exons, variants and sequence are real GRCh38 (hg38) data, baked into `src/data/genome.json` from the [UCSC Genome Browser API](https://api.genome.ucsc.edu/) (cytoBand, ncbiRefSeqSelect, dbSnp155, gwasCatalog, sequence). To regenerate:
 
 ```bash
 npm run data     # python3 scripts/fetch_data.py

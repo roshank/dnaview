@@ -7,8 +7,9 @@ import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import './style.css';
 import { genome, type TraitKey } from './data';
-import { setLevelDiff, setLevelOpacity, type Level } from './levels/common';
+import { setLevelDiff, setLevelOpacity, type DiffLabel, type Level } from './levels/common';
 import { diff, PROFILES, type EyeColor } from './eyeColor';
+import { diff as diffPanel, type Change } from './picker';
 import { buildChromosomeLevel, buildGenomeLevel } from './levels/chromosome';
 import { buildRegionLevel } from './levels/region';
 import { buildGeneLevel } from './levels/gene';
@@ -154,11 +155,30 @@ let eyePrevious: EyeColor | null = null;
 function applyEye() {
   if (traitKey !== 'eye') return;
   const changes = eyePrevious ? diff(PROFILES[eyePrevious], PROFILES[eyeColor]) : new Map();
-  const html = new Map<string, string>();
-  for (const c of changes.values()) html.set(c.id, `<b>${c.gene}</b><span>${c.from.join('')} → ${c.to.join('')}</span>`);
+  const html = new Map<string, DiffLabel>();
+  for (const c of changes.values()) html.set(c.id, { gene: c.gene, html: `<b>${c.gene}</b><span>${c.from.join('')} → ${c.to.join('')}</span>` });
   for (const l of levels) setLevelDiff(l, html);
   (levels[4] as BasesLevel).setAllele(PROFILES[eyeColor].rs12913832[0]);
   ui.setEye(eyeColor, eyePrevious, changes);
+}
+
+// Other traits' pickers: the selected option per trait, and the one it was compared against.
+const picks: Partial<Record<TraitKey, { current: string; previous: string | null }>> = {};
+
+const copies = (pair: [string, string]) => pair.map((c) => c.replace(/-/g, '–')).join('/');
+
+/** Light up the SNPs that differ between the previous and current picker option, at every level. */
+function applyPick() {
+  const spec = TRAITS[traitKey].picker;
+  if (!spec) return;
+  const panel = genome.traits[traitKey].panel ?? [];
+  const st = (picks[traitKey] ??= { current: spec.start, previous: null });
+  const changes: Map<string, Change> = st.previous ? diffPanel(panel, spec.profiles[st.previous], spec.profiles[st.current]) : new Map();
+  const html = new Map<string, DiffLabel>();
+  for (const c of changes.values()) html.set(c.id, { gene: c.gene, html: `<b>${c.gene}</b><span>${copies(c.from)} → ${copies(c.to)}</span>` });
+  for (const l of levels) setLevelDiff(l, html);
+  (levels[4] as BasesLevel).setAllele(spec.profiles[st.current][spec.helix][0]);
+  ui.setPick(spec, panel, st.current, st.previous, changes);
 }
 
 function setTrait(k: TraitKey) {
@@ -169,6 +189,7 @@ function setTrait(k: TraitKey) {
   prevLog = logZoom(t);
   ui.setTrait(TRAITS[k]);
   applyEye();
+  applyPick();
   shownLevel = -1;
 }
 
@@ -267,6 +288,13 @@ const ui = createUI({
     eyePrevious = eyeColor;
     eyeColor = c;
     applyEye();
+  },
+  onPick(key) {
+    const st = picks[traitKey];
+    if (!st || key === st.current) return;
+    st.previous = st.current;
+    st.current = key;
+    applyPick();
   },
   onAllele(b) {
     (levels[4] as BasesLevel).setAllele(b);

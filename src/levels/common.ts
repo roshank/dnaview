@@ -38,6 +38,7 @@ export const BASE_COLORS: Record<string, string> = {
   G: '#facc15',
   C: '#60a5fa',
   N: '#64748b',
+  '-': '#64748b',
 };
 
 export const ACCENT = '#3ee0ff';
@@ -204,12 +205,42 @@ export function addDiffMarker(level: Level, parent: THREE.Object3D, ids: string[
   level.diffs.push({ ids, ring: r, label: l });
 }
 
-/** Show markers whose SNPs are in `changes` (id -> label HTML) and hide the rest. */
-export function setLevelDiff(level: Level, changes: Map<string, string>): void {
+export interface DiffLabel {
+  gene: string;
+  html: string;
+}
+
+/**
+ * Show markers whose SNPs are in `changes` and hide the rest. A marker covering several changed
+ * SNPs in one gene shows a count instead of every letter.
+ */
+export function setLevelDiff(level: Level, changes: Map<string, DiffLabel>): void {
   for (const d of level.diffs) {
-    const html = d.ids.filter((id) => changes.has(id)).map((id) => changes.get(id)).join('');
+    const byGene = new Map<string, DiffLabel[]>();
+    for (const id of d.ids) {
+      const c = changes.get(id);
+      if (c) byGene.set(c.gene, [...(byGene.get(c.gene) ?? []), c]);
+    }
+    const html = [...byGene.entries()]
+      .map(([gene, cs]) => (cs.length > 1 ? `<b>${gene}</b><span>${cs.length} letters change</span>` : cs[0].html))
+      .join('');
     d.ring.visible = html !== '';
     d.label.userData.hidden = html === '';
     d.label.element.innerHTML = html;
   }
+}
+
+/**
+ * Group SNPs whose markers would sit within `gap` units of each other (`y` maps position to height),
+ * so close neighbours share one marker and label.
+ */
+export function clusterSnps<T extends { id: string; pos: number }>(snps: T[], y: (pos: number) => number, gap: number): T[][] {
+  const sorted = [...snps].sort((a, b) => y(b.pos) - y(a.pos));
+  const groups: T[][] = [];
+  for (const s of sorted) {
+    const last = groups[groups.length - 1];
+    if (last && Math.abs(y(last[0].pos) - y(s.pos)) < gap) last.push(s);
+    else groups.push([s]);
+  }
+  return groups;
 }

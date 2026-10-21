@@ -5,6 +5,7 @@ import {
   ACCENT_2,
   addDiffMarker,
   collect,
+  glowMaterial,
   label,
   newLevel,
   ring,
@@ -112,12 +113,35 @@ function regionCenter(t: TraitData) {
   return (t.region[0] + t.region[1]) / 2;
 }
 
-const RELATED_KEYS: Record<TraitKey, string[]> = { eye: [], lactose: [], sex: ['X', 'Y'] };
+const RELATED_KEYS: Record<TraitKey, string[]> = { blood: [], sickle: [], sex: ['X', 'Y'], lactose: [], eye: [], brca: [], height: [] };
+
+/**
+ * Glowing bands at every GWAS hit bin on a chromosome, brighter where more distinct SNPs were found.
+ * `point` maps a genomic position to the chromosome's centre line; `unitsPerBp` sizes each band.
+ */
+function addGwasBands(parent: THREE.Object3D, t: TraitData, chr: Chromosome, point: (pos: number) => THREE.Vector3, radius: number, unitsPerBp: number) {
+  const bins = t.gwas?.bins[chr.name];
+  if (!bins?.length) return;
+  const size = t.gwas!.binSize;
+  const bands = new THREE.InstancedMesh(
+    // Half-height bands leave dark gaps, so the chromosome stays visible under thousands of hits.
+    new THREE.CylinderGeometry(radius, radius, Math.max(size * unitsPerBp * 0.5, 0.006), 24, 1, true),
+    glowMaterial(ACCENT_2, 0.7),
+    bins.length,
+  );
+  const base = new THREE.Color(ACCENT_2);
+  bins.forEach(([bin, count], i) => {
+    bands.setMatrixAt(i, new THREE.Matrix4().setPosition(point((bin + 0.5) * size)));
+    bands.setColorAt(i, base.clone().multiplyScalar(Math.min(1, 0.12 + count / 28)));
+  });
+  parent.add(bands);
+}
 
 /** Level 0: the whole karyotype, centromeres aligned in two rows. */
 export function buildGenomeLevel(key: TraitKey, t: TraitData): Level {
   const level = newLevel('Genome', 3.1e9);
-  const primary = new Set([t.chrom, ...RELATED_KEYS[key]]);
+  // A trait with genome-wide hits involves every chromosome, so none are dimmed.
+  const primary = new Set(t.gwas ? genome.chromosomes.map((c) => c.name) : [t.chrom, ...RELATED_KEYS[key]]);
   const related = new Set(t.related.map((r) => r.chrom));
   let anchorObj: ChromosomeObject | null = null;
 
@@ -161,6 +185,7 @@ export function buildGenomeLevel(key: TraitKey, t: TraitData): Level {
       l.position.copy(p).add(new THREE.Vector3(0.48, 0, 0));
       c.obj.add(l);
     }
+    addGwasBands(c.obj, t, chr, c.centerPoint, R0 * 2.05, h / chr.length);
     const snps = (t.panel ?? []).filter((v) => v.chrom === chr.name);
     if (snps.length) addDiffMarker(level, c.obj, snps.map((v) => v.id), c.centerPoint(snps[0].pos), R0 * 3.4, -0.45);
   });
@@ -236,6 +261,7 @@ export function buildChromosomeLevel(t: TraitData, parentScale: number): Level {
   callout.position.set(R * 2.3, ty, 0);
   level.group.add(callout);
 
+  addGwasBands(level.group, t, chr, c.centerPoint, R * 2.05, H1 / chr.length);
   const snps = (t.panel ?? []).filter((v) => v.chrom === chr.name);
   if (snps.length) {
     const p = c.axisPoint(snps[0].pos);

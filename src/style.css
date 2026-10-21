@@ -71,6 +71,10 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 }
 .traits button b { font-size: 13px; font-weight: 600; }
 .traits button span { font-size: 11px; color: var(--dim); }
+.traits button { flex-direction: row; align-items: center; gap: 8px; padding: 7px 12px; }
+.pips { display: inline-flex; gap: 2px; }
+.pips i { width: 5px; height: 10px; border-radius: 2px; background: rgba(160, 170, 255, 0.18); }
+.pips i.on { background: var(--cyan); box-shadow: 0 0 6px rgba(62, 224, 255, 0.5); }
 .traits button:hover { border-color: rgba(160, 170, 255, 0.35); transform: translateY(-1px); }
 .traits button.on { border-color: var(--cyan); background: rgba(62, 224, 255, 0.1); box-shadow: 0 0 22px rgba(62, 224, 255, 0.15); }
 
@@ -88,6 +92,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .eyebrow { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cyan); font-weight: 600; }
 .panel h1 { font-size: 21px; line-height: 1.25; margin: 8px 0 10px; letter-spacing: -0.01em; font-weight: 650; }
+.influence { display: grid; gap: 4px; margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: rgba(62, 224, 255, 0.05); border: 1px solid rgba(62, 224, 255, 0.16); }
+.influence div { display: grid; grid-template-columns: 1fr auto 64px; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+.influence div b { font-weight: 600; color: var(--text); text-align: right; }
+.influence .pips i { width: 14px; height: 6px; }
+.influence p { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: #c8cbec; }
 .body { font-size: 14px; line-height: 1.6; color: #c8cbec; margin: 0 0 14px; }
 .body b { color: var(--text); font-weight: 600; }
 .facts { margin: 0; display: grid; gap: 1px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
@@ -108,6 +117,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .seq i { font-style: normal; width: 0.62em; text-align: center; opacity: 0.85; }
 .seq i.hl { opacity: 1; background: rgba(62, 224, 255, 0.22); border-radius: 3px; color: #fff; }
 .seq small { display: block; margin-top: 6px; font-family: Inter, sans-serif; font-size: 10.5px; color: var(--dim); }
+.seq i.b-gap { opacity: 1; }
 .b-A { color: var(--A); } .b-T { color: var(--T); } .b-G { color: var(--G); } .b-C { color: var(--C); }
 
 .next { margin-top: 14px; font-size: 12px; color: var(--cyan); cursor: pointer; font-weight: 500; }
@@ -156,6 +166,12 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .es-snps s { text-decoration: none; opacity: 0.45; }
 .es-snps i.changed { color: #fff; background: rgba(255, 79, 216, 0.35); border-radius: 3px; box-shadow: 0 0 10px rgba(255, 79, 216, 0.6); }
 .es-snps tr.changed th { color: var(--diff); }
+.picker .es-picks { margin-top: 2px; }
+.pk-outcome { margin-top: 10px; font-size: 12px; color: var(--muted); }
+.pk-outcome b { color: var(--text); font-weight: 600; }
+.pk-outcome p { margin: 4px 0 0; color: #c8cbec; line-height: 1.5; }
+.es-snps em { font-style: normal; color: var(--dim); padding: 0 1px; }
+.b-gap { color: var(--dim); }
 .es-note { margin: 10px 0 0; font-size: 10.5px; line-height: 1.5; color: var(--dim); }
 
 @media (max-width: 860px) {

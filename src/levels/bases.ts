@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { COMPLEMENT, type TraitData } from '../data';
+import { COMPLEMENT, highlightIndices, type TraitData } from '../data';
 import { ACCENT, addDiffMarker, BASE_COLORS, collect, label, newLevel, ring, type Level } from './common';
 import { H4 } from './gene';
 
@@ -11,7 +11,8 @@ const GROOVE = 2.35;
 export interface BasesLevel extends Level {
   /** Indices (into the sequence) that are highlighted. */
   highlight: number[];
-  setAllele(base: string): void;
+  /** Replace the highlighted letters ("+" strand); "-" leaves a gap, as in a deletion. */
+  setAllele(bases: string): void;
 }
 
 /** Level 4: the double helix itself, 64 base pairs of the real GRCh38 sequence. */
@@ -20,9 +21,7 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
   const n = seq.length;
   const rise = H4 / n;
   const level = newLevel(title, n * 17 / H4) as BasesLevel;
-  level.highlight = t.variant
-    ? [t.variant.pos - t.sequence.start]
-    : [t.startCodon![0] - t.sequence.start, t.startCodon![0] - t.sequence.start + 1, t.startCodon![0] - t.sequence.start + 2];
+  level.highlight = highlightIndices(t);
   const hl = new Set(level.highlight);
 
   const helix = new THREE.Group();
@@ -134,18 +133,26 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
       const a = new THREE.Color(BASE_COLORS[seq[i]]);
       const b = new THREE.Color(BASE_COLORS[COMPLEMENT[seq[i]]]);
       for (const [mesh, c] of [[top, a], [bottom, b]] as const) {
+        // A missing base leaves an empty slot between the backbones.
+        mesh.visible = seq[i] !== '-';
         const mat = mesh.material as THREE.MeshPhysicalMaterial;
         mat.color.copy(c);
         mat.emissive.copy(c);
       }
     }
-    for (const { el, i, strand } of letters) el.textContent = strand === 1 ? seq[i] : COMPLEMENT[seq[i]];
+    for (const { el, i, strand } of letters) {
+      const ch = strand === 1 ? seq[i] : COMPLEMENT[seq[i]];
+      el.textContent = ch === '-' ? '·' : ch;
+    }
     const codon = level.highlight.map((i) => seq[i]).join('');
     const head = t.variant ? t.variant.id : 'SRY start codon';
-    callout.element.innerHTML = `<b>${head} · ${codon}</b><span>${notes[codon] ?? ''}</span>`;
+    const shown = /^-+$/.test(codon) ? `${codon.length > 1 ? `${codon.length} letters` : 'letter'} missing` : codon;
+    callout.element.innerHTML = `<b>${head} · ${shown}</b><span>${notes[codon] ?? ''}</span>`;
   };
-  level.setAllele = (base: string) => {
-    seq[level.highlight[0]] = base;
+  level.setAllele = (bases: string) => {
+    level.highlight.forEach((i, k) => {
+      if (k < bases.length) seq[i] = bases[k];
+    });
     paint();
   };
   paint();
