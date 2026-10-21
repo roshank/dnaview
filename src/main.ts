@@ -185,6 +185,11 @@ function layout(tz: number) {
   const sc = Math.max(s, 1 / 12);
   const ca = Math.pow(sc, 1 - f);
   child.group.scale.setScalar(ca);
+  if (child.radius) {
+    const widen = Math.min(4, Math.max(1, MIN_APPARENT_RADIUS / (child.radius * ca)));
+    const w = THREE.MathUtils.lerp(widen, 1, smooth(ca, 0.4, 1));
+    child.group.scale.x = child.group.scale.z = ca * w;
+  }
   child.group.position.copy(parent.anchor).sub(q).multiplyScalar(S).add(q);
   // Open a dissolving portal in the parent around the child, sized to the child's apparent height,
   // and fade the child in once it is big enough to read.
@@ -207,6 +212,8 @@ function layout(tz: number) {
 }
 
 const H_CHILD = 16;
+/** Smallest apparent half-width (world units) a thin level keeps while zooming in. */
+const MIN_APPARENT_RADIUS = 0.45;
 const scratch = { a: new THREE.Vector3(), b: new THREE.Vector3() };
 
 function spanAt(tz: number) {
