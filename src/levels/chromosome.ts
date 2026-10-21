@@ -3,6 +3,7 @@ import { bandAt, chromosome, genome, type Chromosome, type TraitData, type Trait
 import {
   ACCENT,
   ACCENT_2,
+  addDiffMarker,
   collect,
   label,
   newLevel,
@@ -160,6 +161,8 @@ export function buildGenomeLevel(key: TraitKey, t: TraitData): Level {
       l.position.copy(p).add(new THREE.Vector3(0.48, 0, 0));
       c.obj.add(l);
     }
+    const snps = (t.panel ?? []).filter((v) => v.chrom === chr.name);
+    if (snps.length) addDiffMarker(level, c.obj, snps.map((v) => v.id), c.centerPoint(snps[0].pos), R0 * 3.4, -0.45);
   });
 
   // Mitochondrial DNA: a separate 16.6 kb circle, outside the nucleus.
@@ -232,6 +235,12 @@ export function buildChromosomeLevel(t: TraitData, parentScale: number): Level {
   callout.center.set(0, 0.5);
   callout.position.set(R * 2.3, ty, 0);
   level.group.add(callout);
+
+  const snps = (t.panel ?? []).filter((v) => v.chrom === chr.name);
+  if (snps.length) {
+    const p = c.axisPoint(snps[0].pos);
+    addDiffMarker(level, level.group, snps.map((v) => v.id), p, R * 1.7, -p.x - R * 2.4, -0.6);
+  }
 
   level.anchor.copy(anchor);
   level.childScale = ((t.region[1] - t.region[0]) / chr.length) * H1 / H2;

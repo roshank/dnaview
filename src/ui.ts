@@ -1,4 +1,6 @@
 import { COMPLEMENT, genome, type TraitKey } from './data';
+import { PROFILES, type Change, type EyeColor } from './eyeColor';
+import { createEyeStudio } from './eyePanel';
 import { fmtShort } from './levels/common';
 import { TRAITS, type Trait } from './traits';
 
@@ -6,6 +8,7 @@ interface Handlers {
   onTrait(k: TraitKey): void;
   onLevel(i: number): void;
   onAllele(base: string): void;
+  onEyeColor(c: EyeColor): void;
 }
 
 const LEVEL_KINDS = ['Genome', 'Chromosome', 'Region', 'Gene', 'Base pairs'];
@@ -45,6 +48,9 @@ export function createUI(h: Handlers) {
   let trait: Trait = TRAITS.eye;
   let level = 0;
   let allele = '';
+  let eyeAllele = '';
+  const studio = createEyeStudio(h.onEyeColor);
+  $('.facts').after(studio.el);
 
   for (const t of Object.values(TRAITS)) {
     const b = document.createElement('button');
@@ -82,7 +88,8 @@ export function createUI(h: Handlers) {
     const hl = data.variant
       ? [data.variant.pos - data.sequence.start]
       : [0, 1, 2].map((i) => data.startCodon![0] - data.sequence.start + i);
-    if (allele) bases[hl[0]] = allele;
+    const shownAllele = trait.key === 'eye' ? eyeAllele : allele;
+    if (shownAllele) bases[hl[0]] = shownAllele;
     const from = 14;
     const to = 50;
     const row = (comp: boolean) =>
@@ -123,6 +130,7 @@ export function createUI(h: Handlers) {
         });
       }
     }
+    studio.el.hidden = trait.key !== 'eye';
     const seq = $('.seq');
     seq.hidden = level !== 4;
     if (level === 4) seq.innerHTML = sequenceStrip();
@@ -134,6 +142,11 @@ export function createUI(h: Handlers) {
   return {
     setTrait,
     markTrait,
+    setEye(current: EyeColor, previous: EyeColor | null, changes: Map<string, Change>) {
+      studio.set(current, previous, changes);
+      eyeAllele = PROFILES[current].rs12913832[0];
+      if (trait.key === 'eye' && level === 4) $('.seq').innerHTML = sequenceStrip();
+    },
     setLevel(i: number) {
       level = i;
       render();

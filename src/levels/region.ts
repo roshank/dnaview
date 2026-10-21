@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { type Gene, type TraitData } from '../data';
-import { ACCENT, collect, fmtShort, geneColor, glowMaterial, label, newLevel, NEUTRAL, ring, type Level } from './common';
+import { ACCENT, addDiffMarker, collect, fmtShort, geneColor, glowMaterial, label, newLevel, NEUTRAL, ring, type Level } from './common';
 import { H2 } from './chromosome';
 
 export const H3 = 15;
@@ -124,6 +124,10 @@ export function buildRegionLevel(t: TraitData): Level {
   zoomHint.center.set(1, 0.5);
   zoomHint.position.set(-1.1, wc, 0);
   level.group.add(zoomHint);
+
+  for (const v of t.panel ?? []) {
+    if (v.chrom === t.chrom && v.pos >= r0 && v.pos < r1) addDiffMarker(level, level.group, [v.id], new THREE.Vector3(0, y(v.pos), 0), 0.95, -1.1, 0.75);
+  }
 
   level.anchor.set(0, wc, 0);
   level.childScale = wh / H3;

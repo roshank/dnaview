@@ -38,6 +38,8 @@ export interface TraitData {
   genes: Gene[];
   related: { name: string; chrom: string; start: number; end: number }[];
   variant?: Variant;
+  /** Extra SNPs that act together on the trait (the eye-colour panel). */
+  panel?: { id: string; gene: string; chrom: string; pos: number; ref: string; alts: string[] }[];
   startCodon?: [number, number];
   sequence: { start: number; bases: string };
   bandAt: string;

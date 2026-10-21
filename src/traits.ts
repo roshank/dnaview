@@ -88,10 +88,6 @@ function eye(): Trait {
         ],
       },
     ],
-    alleles: [
-      { base: 'A', label: 'A', note: 'brown-associated' },
-      { base: 'G', label: 'G', note: 'blue-associated' },
-    ],
     notes: { A: 'enhancer on → more melanin', G: 'weaker enhancer → blue eyes (if two copies)' },
   };
 }

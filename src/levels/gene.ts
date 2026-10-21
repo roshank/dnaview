@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { sequenceCenter, type Gene, type TraitData } from '../data';
-import { ACCENT, ACCENT_2, collect, fmtShort, geneColor, label, newLevel, NEUTRAL, ring, type Level } from './common';
+import { ACCENT, ACCENT_2, addDiffMarker, collect, fmtShort, geneColor, label, newLevel, NEUTRAL, ring, type Level } from './common';
 import { geneAt, H3 } from './region';
 
 export const H4 = 16;
@@ -152,6 +152,10 @@ export function buildGeneLevel(t: TraitData): Level {
     pl.center.set(1, 0.5);
     pl.position.set(-0.7, y(PAR1_END), 0);
     level.group.add(pl);
+  }
+
+  for (const v of t.panel ?? []) {
+    if (v.chrom === t.chrom && v.pos >= w0 && v.pos < w1) addDiffMarker(level, level.group, [v.id], new THREE.Vector3(0, y(v.pos), 0), 0.62, -0.6, -1.0);
   }
 
   level.anchor.set(0, y(center), 0);
