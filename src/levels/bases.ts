@@ -36,14 +36,14 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
     const pts: THREE.Vector3[] = [];
     for (let i = -1; i <= n; i += 0.25) pts.push(pt(i));
     const geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), n * 14, 0.075, 10, false);
-    helix.add(new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({ color, roughness: 0.3, clearcoat: 1, sheen: 0.4 })));
+    helix.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness: 0.55 })));
   };
-  backbone(p1, '#c7bfff');
-  backbone(p2, '#a5c8ff');
+  backbone(p1, '#bdb6aa');
+  backbone(p2, '#a9b4bd');
 
   const phosphates = new THREE.InstancedMesh(
     new THREE.SphereGeometry(0.14, 20, 14),
-    new THREE.MeshPhysicalMaterial({ color: '#e7e3ff', roughness: 0.25, clearcoat: 1 }),
+    new THREE.MeshStandardMaterial({ color: '#e2dccf', roughness: 0.5 }),
     n * 2,
   );
   const m = new THREE.Matrix4();
@@ -55,7 +55,7 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
 
   // Bases: each half-rung runs from its backbone to the pairing midpoint.
   const rungGeo = new THREE.CylinderGeometry(0.085, 0.085, 1, 12);
-  const rungs = new THREE.InstancedMesh(rungGeo, new THREE.MeshPhysicalMaterial({ roughness: 0.35, clearcoat: 0.6 }), n * 2);
+  const rungs = new THREE.InstancedMesh(rungGeo, new THREE.MeshStandardMaterial({ roughness: 0.55 }), n * 2);
   const up = new THREE.Vector3(0, 1, 0);
   const halfRung = (a: THREE.Vector3, b: THREE.Vector3) => {
     const mid = a.clone().add(b).multiplyScalar(0.5);
@@ -82,7 +82,7 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
     const mk = (a: THREE.Vector3, b: THREE.Vector3) => {
       const mesh = new THREE.Mesh(
         new THREE.CylinderGeometry(0.12, 0.12, 1, 16),
-        new THREE.MeshPhysicalMaterial({ roughness: 0.2, clearcoat: 1, emissiveIntensity: 0.9 }),
+        new THREE.MeshStandardMaterial({ roughness: 0.4, emissiveIntensity: 0.25 }),
       );
       halfRung(a, b).decompose(mesh.position, mesh.quaternion, mesh.scale);
       helix.add(mesh);
@@ -101,17 +101,6 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
       helix.add(l);
       letters.push({ el: l.element, obj: l, i, strand });
     }
-  }
-  const ends: [string, THREE.Vector3][] = [
-    ['5′', p1(-1.2)],
-    ['3′', p1(n + 0.2)],
-    ['3′', p2(-1.2)],
-    ['5′', p2(n + 0.2)],
-  ];
-  for (const [text, p] of ends) {
-    const l = label(text, 'end');
-    l.position.copy(p);
-    helix.add(l);
   }
 
   const glow = ring(R * 1.5, 0.02, ACCENT);
@@ -135,7 +124,7 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
       for (const [mesh, c] of [[top, a], [bottom, b]] as const) {
         // A missing base leaves an empty slot between the backbones.
         mesh.visible = seq[i] !== '-';
-        const mat = mesh.material as THREE.MeshPhysicalMaterial;
+        const mat = mesh.material as THREE.MeshStandardMaterial;
         mat.color.copy(c);
         mat.emissive.copy(c);
       }
@@ -145,9 +134,12 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
       el.textContent = ch === '-' ? '·' : ch;
     }
     const codon = level.highlight.map((i) => seq[i]).join('');
-    const head = t.variant ? t.variant.id : 'SRY start codon';
-    const shown = /^-+$/.test(codon) ? `${codon.length > 1 ? `${codon.length} letters` : 'letter'} missing` : codon;
-    callout.element.innerHTML = `<b>${head} · ${shown}</b><span>${notes[codon] ?? ''}</span>`;
+    const head = !t.variant
+      ? `Start signal · ${codon}`
+      : /^-+$/.test(codon)
+        ? `${codon.length > 1 ? `${codon.length} letters` : 'Letter'} missing`
+        : `${codon.length > 1 ? 'Letters' : 'Letter'} ${codon}`;
+    callout.element.innerHTML = `<b>${head}</b><span>${notes[codon] ?? ''}</span>`;
   };
   level.setAllele = (bases: string) => {
     level.highlight.forEach((i, k) => {

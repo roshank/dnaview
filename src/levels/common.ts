@@ -33,29 +33,31 @@ export interface Level {
 }
 
 export const BASE_COLORS: Record<string, string> = {
-  A: '#4ade80',
-  T: '#fb7185',
-  G: '#facc15',
-  C: '#60a5fa',
-  N: '#64748b',
-  '-': '#64748b',
+  A: '#5e9e6e',
+  T: '#d06b5f',
+  G: '#d9a441',
+  C: '#5b88c2',
+  N: '#b9b4aa',
+  '-': '#b9b4aa',
 };
 
-export const ACCENT = '#3ee0ff';
-export const ACCENT_2 = '#ffb547';
-export const NEUTRAL = '#4a5276';
+/** The thing to look at: the zoom target and the trait's main gene. */
+export const ACCENT = '#2f6f73';
+/** Secondary emphasis: the trait's other genes and related spots. */
+export const ACCENT_2 = '#b7793f';
+export const NEUTRAL = '#c9c2b6';
 /** Colour for DNA that changed in the current comparison. */
-export const DIFF = '#ff4fd8';
+export const DIFF = '#d2553f';
 
 const STAIN: Record<string, string> = {
-  gneg: '#dcd6f2',
-  gpos25: '#c3bbe6',
-  gpos50: '#9a8fd0',
-  gpos75: '#7062b4',
-  gpos100: '#4b3e8f',
-  acen: '#ff5f8f',
-  gvar: '#86c2e0',
-  stalk: '#9fd8c6',
+  gneg: '#e7e1d6',
+  gpos25: '#cfc7ba',
+  gpos50: '#ada496',
+  gpos75: '#857c71',
+  gpos100: '#5c564f',
+  acen: '#c98a78',
+  gvar: '#a9bcc4',
+  stalk: '#bfc9b4',
 };
 
 export function stainColor(stain: string): THREE.Color {
@@ -107,7 +109,7 @@ export function collect(level: Level): void {
       seen.add(m);
       m.transparent = true;
       addPortal(m, level);
-      level.materials.push({ m, base: m.opacity, glow: m.blending === THREE.AdditiveBlending, depth: m.depthWrite });
+      level.materials.push({ m, base: m.opacity, glow: m.userData.marker === true, depth: m.depthWrite });
     }
   });
 }
@@ -139,20 +141,16 @@ export function label(text: string, cls = '', html = false): CSS2DObject {
   return new CSS2DObject(el);
 }
 
-export function glowMaterial(color: THREE.ColorRepresentation, opacity = 1): THREE.MeshBasicMaterial {
-  return new THREE.MeshBasicMaterial({
-    color: new THREE.Color(color).multiplyScalar(2.2),
-    transparent: true,
-    opacity,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    toneMapped: false,
-  });
+/** Flat, unlit colour for markers (rings, highlight sleeves) that should read clearly at any angle. */
+export function markMaterial(color: THREE.ColorRepresentation, opacity = 1): THREE.MeshBasicMaterial {
+  const m = new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, toneMapped: false });
+  m.userData.marker = true;
+  return m;
 }
 
 /** A horizontal glowing ring around the vertical axis at height y. */
 export function ring(radius: number, tube: number, color: THREE.ColorRepresentation, opacity = 1): THREE.Mesh {
-  const m = new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 12, 96), glowMaterial(color, opacity));
+  const m = new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 12, 96), markMaterial(color, opacity));
   m.rotation.x = Math.PI / 2;
   return m;
 }
@@ -171,6 +169,12 @@ export function fmtShort(bp: number): string {
   return `${Math.round(bp)} bp`;
 }
 
+/** A gene's length in everyday words: "211,000 letters". */
+export function lettersLong(bp: number): string {
+  const n = bp >= 1e4 ? Math.round(bp / 1e3) * 1e3 : bp;
+  return `${n.toLocaleString('en-US')} letters`;
+}
+
 /** Deterministic hue for non-focus genes. */
 export function geneColor(name: string, focus: string[]): THREE.Color {
   const i = focus.indexOf(name);
@@ -178,7 +182,7 @@ export function geneColor(name: string, focus: string[]): THREE.Color {
   if (i === 1) return new THREE.Color(ACCENT);
   let h = 0;
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return new THREE.Color().setHSL(0.6 + ((h % 1000) / 1000) * 0.35, 0.35, 0.58);
+  return new THREE.Color().setHSL(0.55 + ((h % 1000) / 1000) * 0.2, 0.12, 0.64);
 }
 
 export interface DiffMarker {
