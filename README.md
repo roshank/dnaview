@@ -22,6 +22,8 @@ npm run dev      # http://localhost:5173
 npm run build    # static site in dist/
 ```
 
+Every push to `main` is built and published to GitHub Pages at https://roshank.github.io/dnaview/ by `.github/workflows/deploy.yml`. Pull requests are built but not published. Pages must be enabled once under **Settings → Pages → Source: GitHub Actions**.
+
 Controls: scroll or pinch to zoom, drag to rotate, ←/→ to step between levels. You can also click the level track.
 
 ## Data
