@@ -7,6 +7,8 @@ const R = 1.0;
 const BP_PER_TURN = 10.5;
 /** Angular offset between the two backbones; less than π, which creates major and minor grooves. */
 const GROOVE = 2.35;
+/** Colour the non-key letters fade toward. */
+const FADED = new THREE.Color('#ddd6ca');
 
 export interface BasesLevel extends Level {
   /** Indices (into the sequence) that are highlighted. */
@@ -71,8 +73,9 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
     const b = p2(i);
     rungs.setMatrixAt(i * 2, hl.has(i) ? hidden : halfRung(a, b));
     rungs.setMatrixAt(i * 2 + 1, hl.has(i) ? hidden : halfRung(b, a));
-    rungs.setColorAt(i * 2, new THREE.Color(BASE_COLORS[seq[i]]));
-    rungs.setColorAt(i * 2 + 1, new THREE.Color(BASE_COLORS[COMPLEMENT[seq[i]]]));
+    // Every other letter fades toward grey so the key pair stands out.
+    rungs.setColorAt(i * 2, new THREE.Color(BASE_COLORS[seq[i]]).lerp(FADED, 0.7));
+    rungs.setColorAt(i * 2 + 1, new THREE.Color(BASE_COLORS[COMPLEMENT[seq[i]]]).lerp(FADED, 0.7));
   }
   helix.add(rungs);
 
@@ -81,7 +84,7 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
   for (const i of level.highlight) {
     const mk = (a: THREE.Vector3, b: THREE.Vector3) => {
       const mesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.12, 0.12, 1, 16),
+        new THREE.CylinderGeometry(0.16, 0.16, 1, 20),
         new THREE.MeshStandardMaterial({ roughness: 0.4, emissiveIntensity: 0.25 }),
       );
       halfRung(a, b).decompose(mesh.position, mesh.quaternion, mesh.scale);
@@ -91,12 +94,12 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
     hlMeshes.push({ i, top: mk(p1(i), p2(i)), bottom: mk(p2(i), p1(i)) });
   }
 
-  // Letters near the centre of the view.
+  // Letters for the key pair only.
   const letters: { el: HTMLElement; obj: THREE.Object3D; i: number; strand: 1 | 2 }[] = [];
   const mid = level.highlight[Math.floor(level.highlight.length / 2)];
-  for (let i = Math.max(0, mid - 3); i <= Math.min(n - 1, mid + 3); i++) {
+  for (const i of level.highlight) {
     for (const strand of [1, 2] as const) {
-      const l = label('', `base ${hl.has(i) ? 'hl' : ''}`);
+      const l = label('', 'base hl');
       l.position.copy((strand === 1 ? p1(i) : p2(i)).multiply(new THREE.Vector3(1.4, 1, 1.4)));
       helix.add(l);
       letters.push({ el: l.element, obj: l, i, strand });
@@ -108,15 +111,16 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
   glow.position.y = hy;
   glow.userData.pulse = true;
   level.group.add(glow);
-  const callout = label('', 'callout left', true);
+  const callout = label('', 'callout left key', true);
   callout.center.set(1, 0.5);
   callout.position.set(-R * 1.9, hy, 0);
   level.group.add(callout);
 
   if (t.variant && t.panel?.some((v) => v.id === t.variant!.id)) {
-    addDiffMarker(level, level.group, [t.variant.id], new THREE.Vector3(0, hy, 0), R * 1.85, -R * 1.9, -1.3);
+    addDiffMarker(level, level.group, [t.variant.id], new THREE.Vector3(0, hy, 0), R * 1.85, -R * 1.9, -2.1);
   }
 
+  let before = '';
   const paint = () => {
     for (const { i, top, bottom } of hlMeshes) {
       const a = new THREE.Color(BASE_COLORS[seq[i]]);
@@ -134,17 +138,29 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
       el.textContent = ch === '-' ? '·' : ch;
     }
     const codon = level.highlight.map((i) => seq[i]).join('');
+    const show = (c: string) => (/^-+$/.test(c) ? 'gap' : c);
+    const what = codon.length > 1 ? 'Letters' : 'Letter';
+    // Right after a change, say what it changed from.
     const head = !t.variant
       ? `Start signal · ${codon}`
-      : /^-+$/.test(codon)
-        ? `${codon.length > 1 ? `${codon.length} letters` : 'Letter'} missing`
-        : `${codon.length > 1 ? 'Letters' : 'Letter'} ${codon}`;
+      : before && before !== codon
+        ? `${what} ${show(before)} → ${show(codon)}`
+        : /^-+$/.test(codon)
+          ? `${codon.length > 1 ? `${codon.length} letters` : 'Letter'} missing`
+          : `${what} ${codon}`;
     callout.element.innerHTML = `<b>${head}</b><span>${notes[codon] ?? ''}</span>`;
   };
+  let popPending = false;
   level.setAllele = (bases: string) => {
+    const old = level.highlight.map((i) => seq[i]).join('');
     level.highlight.forEach((i, k) => {
       if (k < bases.length) seq[i] = bases[k];
     });
+    const now = level.highlight.map((i) => seq[i]).join('');
+    if (now !== old) {
+      before = old;
+      popPending = true;
+    }
     paint();
   };
   paint();
@@ -154,8 +170,21 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
   collect(level);
   const wp = new THREE.Vector3();
   const center = new THREE.Vector3();
-  level.update = (_time, dt) => {
-    helix.rotation.y += dt * 0.18;
+  // Turn the helix so the key pair faces the viewer, with only a gentle sway.
+  const facing = angle(mid) + GROOVE / 2 - Math.PI / 2;
+  const radii = hlMeshes.flatMap(({ top, bottom }) => [top, bottom]).map((mesh) => ({ mesh, s: mesh.scale.x }));
+  let popStart = -10;
+  level.update = (time, dt) => {
+    const goal = facing + Math.sin(time * 0.35) * 0.18;
+    helix.rotation.y += (goal - helix.rotation.y) * (1 - Math.exp(-dt * 3));
+    // A short swell on the changed letters, so the change is easy to spot.
+    if (popPending) {
+      popStart = time;
+      popPending = false;
+    }
+    const k = (time - popStart) / 0.8;
+    const swell = k >= 0 && k < 1 ? 1 + 0.9 * Math.sin(Math.PI * k) : 1;
+    for (const { mesh, s } of radii) mesh.scale.x = mesh.scale.z = s * swell;
     // Dim letters on the far side of the helix.
     helix.getWorldPosition(center);
     for (const { el, obj } of letters) {

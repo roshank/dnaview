@@ -331,6 +331,7 @@ renderer.setAnimationLoop(() => {
   layout(t);
 
   for (const l of levels) {
+    l.onZoom?.(t);
     if (!l.group.visible) continue;
     l.update?.(time, dt);
     const pulse = 1 + 0.03 * Math.sin(time * 2);

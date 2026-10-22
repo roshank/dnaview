@@ -30,6 +30,8 @@ export interface Level {
   /** Markers that light up while one of their SNPs differs from the previous selection. */
   diffs: DiffMarker[];
   update?(time: number, dt: number): void;
+  /** Called every frame with the global zoom position (0 = genome … 4 = letters). */
+  onZoom?(t: number): void;
 }
 
 export const BASE_COLORS: Record<string, string> = {
