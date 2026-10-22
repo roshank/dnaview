@@ -186,17 +186,71 @@ details[open] > summary::before { content: '–'; }
 .scale { font-variant-numeric: tabular-nums; color: var(--muted); }
 .disclaimer { position: absolute; right: 24px; bottom: 16px; font-size: 11px; color: var(--faint); pointer-events: none; }
 
+/* Phone-only pieces stay hidden on larger screens. */
+.grip, .stepper, .fine { display: none; }
+
 @media (max-width: 860px) {
-  .top { padding: 14px 16px 10px; gap: 8px; flex-direction: column; align-items: flex-start; }
-  .traits { width: 100%; flex-wrap: nowrap; overflow-x: auto; gap: 16px; padding-bottom: 2px; }
-  .traits button { flex: none; }
-  .panel { top: auto; left: 12px; right: 12px; width: auto; bottom: 96px; height: 40vh; justify-content: flex-end; }
-  .panel-inner { padding: 18px; }
-  .panel h1 { font-size: 20px; margin: 4px 0 6px; }
-  .lead { font-size: 14px; margin-bottom: 12px; }
-  .zoom { left: 8px; right: 8px; bottom: 24px; }
-  .crumbs button { font-size: 10.5px; padding-top: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .crumbs button small { display: none; }
-  .meta .hint { display: none; }
-  .disclaimer { left: 16px; right: auto; bottom: 6px; }
+  html, body { height: 100dvh; }
+  .top {
+    padding: calc(10px + env(safe-area-inset-top)) 0 6px 16px; gap: 14px; flex-wrap: nowrap; align-items: center;
+    background: linear-gradient(var(--paper) 70%, rgba(245, 242, 235, 0));
+  }
+  .brand { font-size: 17px; flex: none; }
+  .traits {
+    flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 4px 24px 4px 0; scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 85%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
+  }
+  .traits::-webkit-scrollbar { display: none; }
+  .traits button { flex: none; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font-size: 13px; }
+  .traits button.on { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+  .traits button.on::after { display: none; }
+
+  /* Bottom sheet */
+  .panel {
+    --sheet-short: 44;
+    top: auto; left: 0; right: 0; bottom: 0; width: auto;
+    height: calc(var(--sheet-short) * 1dvh); justify-content: flex-end;
+    transition: height 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .panel.expanded { height: 86dvh; }
+  .panel-inner {
+    height: 100%; max-height: none; display: flex; flex-direction: column;
+    padding: 0 18px calc(18px + env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0; border-bottom: 0;
+    box-shadow: 0 -1px 0 var(--line), 0 -10px 30px rgba(35, 38, 43, 0.08);
+    overscroll-behavior: contain;
+  }
+  .panel-inner > * { flex: none; }
+  .grip { display: flex; justify-content: center; align-self: stretch; padding: 10px 0 6px; touch-action: none; cursor: grab; }
+  .grip i { width: 40px; height: 5px; border-radius: 3px; background: #d6cfc3; }
+
+  .stepper { display: flex; align-items: center; gap: 8px; margin: 0 -6px 10px; }
+  .stepper button { width: 44px; height: 44px; flex: none; border-radius: 50%; font-size: 26px; line-height: 1; color: var(--accent); }
+  .stepper button:disabled { color: #d6cfc3; cursor: default; }
+  .stepper button:not(:disabled):active { background: var(--accent-soft); }
+  .where { flex: 1; min-width: 0; text-align: center; display: flex; flex-direction: column; }
+  .where b { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .where span { font-size: 11.5px; color: var(--faint); }
+
+  /* The interactive picker comes right after the idea it illustrates. */
+  .eyebrow { display: none; }
+  .panel h1 { font-size: 20px; margin: 0 0 6px; order: 1; }
+  .lead { font-size: 14.5px; margin-bottom: 4px; order: 2; }
+  .eye-studio { order: 3; margin-top: 14px; }
+  .alleles { order: 4; }
+  .influence { order: 5; margin-top: 16px; }
+  .science { order: 6; }
+  .fine { display: block; order: 7; margin: 16px 0 0; font-size: 11px; color: var(--faint); }
+  .next { display: none; }
+
+  .iris { width: 72px; height: 72px; }
+  .es-top { gap: 12px; }
+  .es-picks button, .opts button { min-height: 40px; }
+
+  .zoom, .disclaimer { display: none; }
+
+  /* Keep callouts on screen: narrower, and wrapping instead of running off the edge. */
+  .label.callout, .label.gene { white-space: normal; max-width: 132px; font-size: 11px; }
+  .label.callout.left { max-width: 120px; }
 }

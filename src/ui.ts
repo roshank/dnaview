@@ -36,6 +36,12 @@ export function createUI(h: Handlers) {
     </header>
     <aside class="panel" aria-live="polite">
       <div class="panel-inner">
+        <button class="grip" aria-label="Show more"><i></i></button>
+        <div class="stepper">
+          <button class="prev" aria-label="Zoom out">‹</button>
+          <div class="where"><b></b><span></span></div>
+          <button class="fwd" aria-label="Zoom in">›</button>
+        </div>
         <div class="eyebrow"></div>
         <h1></h1>
         <p class="lead"></p>
@@ -48,6 +54,7 @@ export function createUI(h: Handlers) {
           <div class="seq" hidden></div>
         </details>
         <button class="next"></button>
+        <p class="fine">Real human genome data (GRCh38) · for learning, not medical advice</p>
       </div>
     </aside>
     <footer class="zoom">
@@ -70,6 +77,31 @@ export function createUI(h: Handlers) {
   const studio = createEyeStudio(h.onEyeColor);
   const picker = createPickerPanel(h.onPick);
   $('.influence').after(studio.el, picker.el);
+  let readout = '';
+
+  // Phone layout: a bottom sheet that drags or taps between a short and a tall height. The 3D
+  // view is fitted to the short height, so expanding the sheet only covers it.
+  const sheet = $('.panel');
+  const grip = $('.grip');
+  const setExpanded = (on: boolean) => {
+    sheet.classList.toggle('expanded', on);
+    grip.setAttribute('aria-label', on ? 'Show less' : 'Show more');
+    if (!on) panel.scrollTop = 0;
+  };
+  let dragY: number | null = null;
+  grip.addEventListener('pointerdown', (e) => {
+    dragY = e.clientY;
+    grip.setPointerCapture(e.pointerId);
+  });
+  grip.addEventListener('pointerup', (e) => {
+    if (dragY === null) return;
+    const dy = e.clientY - dragY;
+    dragY = null;
+    if (Math.abs(dy) < 8) setExpanded(!sheet.classList.contains('expanded'));
+    else setExpanded(dy < 0);
+  });
+  $('.prev').onclick = () => h.onLevel(Math.max(0, level - 1));
+  $('.fwd').onclick = () => h.onLevel(Math.min(4, level + 1));
 
   for (const t of Object.values(TRAITS)) {
     const b = document.createElement('button');
@@ -166,6 +198,10 @@ export function createUI(h: Handlers) {
     next.textContent = `Zoom in: ${LEVEL_KINDS[level + 1] ?? ''} →`;
     next.onclick = () => h.onLevel(level + 1);
     crumbButtons.forEach((b, i) => b.classList.toggle('on', i === level));
+    ($('.prev') as HTMLButtonElement).disabled = level === 0;
+    ($('.fwd') as HTMLButtonElement).disabled = level === 4;
+    $('.where b').textContent = crumbButtons[level].textContent ?? '';
+    $('.where span').textContent = `${level + 1} of 5 · ${readout}`;
   }
 
   return {
@@ -188,6 +224,11 @@ export function createUI(h: Handlers) {
     setProgress(t: number, span: number) {
       fill.style.width = `${(t / 4) * 100}%`;
       scale.textContent = `In view: about ${letters(span)}`;
+      const r = `about ${letters(span)}`;
+      if (r !== readout) {
+        readout = r;
+        $('.where span').textContent = `${level + 1} of 5 · ${readout}`;
+      }
     },
     /** Screen rectangle (px) the 3D content should fit into. */
     freeArea(w: number, hgt: number) {
@@ -197,8 +238,9 @@ export function createUI(h: Handlers) {
         const p = $('.panel').getBoundingClientRect();
         return { left: 16, right: p.left - 16, top, bottom };
       }
-      const p = $('.panel').getBoundingClientRect();
-      return { left: 8, right: w - 8, top, bottom: Math.min(bottom, p.top - 8, hgt) };
+      // Fit to the sheet's short height, whatever its current state.
+      const sheetTop = hgt - parseFloat(getComputedStyle(sheet).getPropertyValue('--sheet-short')) * (hgt / 100);
+      return { left: 8, right: w - 8, top, bottom: Math.min(sheetTop - 8, hgt) };
     },
   };
 }
