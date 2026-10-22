@@ -25,8 +25,11 @@ export function createPickerPanel(onPick: (key: string) => void): PickerPanel {
     <header><b></b><span></span></header>
     <div class="es-picks" role="radiogroup"></div>
     <div class="pk-outcome" aria-live="polite"><div class="pk-summary"></div><p></p></div>
-    <table class="es-snps"><tbody></tbody></table>
-    <p class="es-note"></p>`;
+    <details class="more">
+      <summary>Which letters changed?</summary>
+      <table class="es-snps"><tbody></tbody></table>
+      <p class="es-note"></p>
+    </details>`;
   const $ = <T extends HTMLElement>(sel: string) => el.querySelector(sel) as T;
   let built: PickerSpec | null = null;
 
@@ -57,8 +60,8 @@ export function createPickerPanel(onPick: (key: string) => void): PickerPanel {
       }
       const label = (key: string) => spec.options.find((o) => o.key === key)!.label;
       $('.pk-summary').innerHTML = previous
-        ? `<b>${label(previous)} → ${label(current)}</b> · ${changes.size} of ${panel.length} variant${panel.length > 1 ? 's' : ''} change`
-        : `<b>${label(current)}</b> · matches the reference genome`;
+        ? `<b>${label(previous)} → ${label(current)}</b> <span class="chg">${changes.size} DNA letter spot${changes.size === 1 ? '' : 's'} changed, now highlighted</span>`
+        : `<b>${label(current)}</b> <span>the reference genome’s version</span>`;
       $('.pk-outcome p').textContent = spec.options.find((o) => o.key === current)!.outcome;
 
       $('tbody').innerHTML = panel

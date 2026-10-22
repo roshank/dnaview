@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { type Gene, type TraitData } from '../data';
-import { ACCENT, addDiffMarker, clusterSnps, collect, fmtShort, geneColor, glowMaterial, label, newLevel, NEUTRAL, ring, type Level } from './common';
+import { ACCENT, addDiffMarker, clusterSnps, collect, geneColor, lettersLong, label, markMaterial, newLevel, NEUTRAL, ring, type Level } from './common';
 import { H2 } from './chromosome';
 
 export const H3 = 15;
@@ -48,13 +48,13 @@ export function buildRegionLevel(t: TraitData): Level {
   const tp = tube.attributes.position;
   for (let i = 0; i < tp.count; i++) colorAt(posAt((H2 / 2 - tp.getY(i)) / H2)).toArray(tc, i * 3);
   tube.setAttribute('color', new THREE.BufferAttribute(tc, 3));
-  fiber.add(new THREE.Mesh(tube, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, emissive: '#1a1f3a' })));
+  fiber.add(new THREE.Mesh(tube, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7 })));
 
   // Nucleosomes: DNA wrapped around histone octamers, stacked into a ~30 nm fiber.
   const count = TURNS * PER_TURN;
   const nuc = new THREE.InstancedMesh(
     new THREE.SphereGeometry(0.17, 20, 14),
-    new THREE.MeshPhysicalMaterial({ roughness: 0.42, clearcoat: 0.7, clearcoatRoughness: 0.25, sheen: 0.5 }),
+    new THREE.MeshStandardMaterial({ roughness: 0.6 }),
     count,
   );
   const m = new THREE.Matrix4();
@@ -75,8 +75,10 @@ export function buildRegionLevel(t: TraitData): Level {
 
   // Gene extents as brackets with labels on the right.
   const shown = [...t.genes].sort((a, b) => {
-    const fa = t.focusGenes.includes(a.name) ? 0 : 1;
-    const fb = t.focusGenes.includes(b.name) ? 0 : 1;
+    // Focus genes in the trait's own order (the variant's gene first), then the rest by size.
+    const rank = (g: Gene) => (t.focusGenes.includes(g.name) ? t.focusGenes.indexOf(g.name) : t.focusGenes.length);
+    const fa = rank(a);
+    const fb = rank(b);
     return fa - fb || b.end - b.start - (a.end - a.start);
   });
   const usedY: number[] = [];
@@ -95,11 +97,11 @@ export function buildRegionLevel(t: TraitData): Level {
     level.group.add(bracket);
 
     const ly = (y(a) + y(b)) / 2;
-    if (!focus && usedY.some((u) => Math.abs(u - ly) < 0.6)) return;
+    // Only the trait's own genes are named; the rest stay as quiet brackets.
+    if (!focus || usedY.some((u) => Math.abs(u - ly) < 0.6)) return;
     usedY.push(ly);
-    const kb = fmtShort(g.end - g.start);
     const l = label(
-      `<b style="color:#${col.getHexString()}">${g.name}</b><span>${kb}${g.coding ? '' : ' · non-coding'}</span>`,
+      `<b style="color:#${col.getHexString()}">${g.name}</b><span>${lettersLong(g.end - g.start)}</span>`,
       focus ? 'gene focus' : 'gene',
       true,
     );
@@ -111,7 +113,7 @@ export function buildRegionLevel(t: TraitData): Level {
   // The window the next level zooms into.
   const [w0, w1] = t.geneWindow;
   const wh = y(w0) - y(w1);
-  const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.82, Math.max(wh, 0.05), 48, 1, true), glowMaterial(ACCENT, 0.16));
+  const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.82, Math.max(wh, 0.05), 48, 1, true), markMaterial(ACCENT, 0.1));
   const wc = (y(w0) + y(w1)) / 2;
   sleeve.position.y = wc;
   level.group.add(sleeve);
@@ -120,7 +122,7 @@ export function buildRegionLevel(t: TraitData): Level {
     rr.position.y = yy;
     level.group.add(rr);
   }
-  const zoomHint = label('zoom target', 'hint');
+  const zoomHint = label('zooming in here', 'hint');
   zoomHint.center.set(1, 0.5);
   zoomHint.position.set(-1.1, wc, 0);
   level.group.add(zoomHint);

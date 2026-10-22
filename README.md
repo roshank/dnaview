@@ -4,7 +4,7 @@ A GPU-accelerated browser explorer for the human genome. Pick a trait and zoom c
 
 **Genome → Chromosome → Chromatin region → Gene → Double helix**
 
-Each level is a 3D structure nested inside its parent. As you zoom, the parent dissolves around the target and the next structure grows out of it.
+Each level is a 3D structure nested inside its parent. As you zoom, the parent dissolves around the target and the next structure grows out of it. The aim is intuition, not expertise: every step leads with one plain-language idea, and the full science (IDs, coordinates, sequences, sources) sits under "The science".
 
 Prototype traits:
 
@@ -46,7 +46,7 @@ Trait regions are configured at the top of `scripts/fetch_data.py`. The explanat
 
 ## Code map
 
-- `src/main.ts`: renderer, bloom, nested-zoom transform, portal dissolve, particles, input
+- `src/main.ts`: renderer, nested-zoom transform, portal dissolve, input
 - `src/levels/`: one builder per zoom level (`chromosome.ts` covers the genome and chromosome levels)
 - `src/ui.ts`, `src/style.css`: overlay panel, trait picker, level track
 

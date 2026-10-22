@@ -122,7 +122,7 @@ export function createEyeStudio(onPick: (c: EyeColor) => void): EyeStudio {
   const el = document.createElement('section');
   el.className = 'eye-studio';
   el.innerHTML = `
-    <header><b>Pick an eye color</b><span>Glowing DNA shows what would change</span></header>
+    <header><b>Pick an eye color</b><span>The DNA that would change is highlighted</span></header>
     <div class="es-top">
       <canvas class="iris" width="${IRIS_PX * 2}" height="${IRIS_PX * 2}" aria-hidden="true"></canvas>
       <div class="es-right">
@@ -131,8 +131,11 @@ export function createEyeStudio(onPick: (c: EyeColor) => void): EyeStudio {
         <div class="es-scale"><div class="bar"><i></i></div><div class="ends"><span>lighter</span><span>darker</span></div></div>
       </div>
     </div>
-    <table class="es-snps"><tbody></tbody></table>
-    <p class="es-note">Example genotypes: many letter combinations give each color. These six variants separate blue from brown well, green and hazel much less so. Per-letter effects from Eriksson et al. 2010 (PLoS Genetics).</p>`;
+    <details class="more">
+      <summary>Which letters changed?</summary>
+      <table class="es-snps"><tbody></tbody></table>
+      <p class="es-note">Example genotypes: many letter combinations give each color. These six variants separate blue from brown well, green and hazel much less so. Per-letter effects from Eriksson et al. 2010 (PLoS Genetics).</p>
+    </details>`;
 
   const canvas = el.querySelector('canvas')!;
   const ctx = canvas.getContext('2d')!;
@@ -181,8 +184,8 @@ export function createEyeStudio(onPick: (c: EyeColor) => void): EyeStudio {
       const s = score(PROFILES[current]);
       el.querySelector<HTMLElement>('.bar i')!.style.left = `${((s - lo) / (hi - lo)) * 100}%`;
       el.querySelector('.es-summary')!.innerHTML = previous
-        ? `<b>${LABELS[previous]} → ${LABELS[current]}</b> · ${changes.size} of ${PANEL.length} variants change`
-        : `<b>${LABELS[current]}</b> · matches the reference genome`;
+        ? `<b>${LABELS[previous]} → ${LABELS[current]}</b> <span class="chg">${changes.size} of ${PANEL.length} spots changed, now highlighted</span>`
+        : `<b>${LABELS[current]}</b> <span>the reference genome’s version</span>`;
 
       el.querySelector('tbody')!.innerHTML = PANEL.map((v) => {
         const now = PROFILES[current][v.id];

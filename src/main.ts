@@ -1,8 +1,4 @@
 import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import './style.css';
@@ -21,10 +17,10 @@ const MAX_T = 4;
 const app = document.getElementById('app')!;
 
 // ---------- Renderer ----------
+const PAPER = '#f5f2eb';
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.95;
+renderer.toneMapping = THREE.NeutralToneMapping;
 app.appendChild(renderer.domElement);
 
 const labelRenderer = new CSS2DRenderer();
@@ -32,96 +28,21 @@ labelRenderer.domElement.className = 'labels';
 app.appendChild(labelRenderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = backgroundTexture();
+scene.background = new THREE.Color(PAPER);
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-scene.environmentIntensity = 0.55;
+scene.environmentIntensity = 0.35;
 
 const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 5000);
 camera.position.set(0, 0, 26);
 
-const key = new THREE.DirectionalLight('#ffffff', 2.0);
-key.position.set(6, 9, 12);
-const rim = new THREE.DirectionalLight('#7c6cff', 2.4);
-rim.position.set(-10, -3, -8);
-scene.add(key, rim, new THREE.HemisphereLight('#a8b4ff', '#0b0d1f', 0.5));
+// Soft, even daylight: a warm key from the upper left and a gentle sky/ground fill.
+const key = new THREE.DirectionalLight('#fffaf0', 1.5);
+key.position.set(-6, 9, 12);
+scene.add(key, new THREE.HemisphereLight('#ffffff', '#d9d2c5', 1.4));
 
 const world = new THREE.Group();
 scene.add(world);
-
-const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.55, 0.5, 1.0);
-composer.addPass(bloom);
-composer.addPass(new OutputPass());
-
-function backgroundTexture() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 512;
-  const g = c.getContext('2d')!;
-  const grad = g.createRadialGradient(220, 230, 20, 256, 256, 380);
-  grad.addColorStop(0, '#171d44');
-  grad.addColorStop(0.55, '#0a0d24');
-  grad.addColorStop(1, '#040510');
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 512, 512);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-// ---------- Drifting particles that stream past while zooming ----------
-const PARTICLES = 1100;
-const pPos = new Float32Array(PARTICLES * 3);
-const tmp = new THREE.Vector3();
-function spawn(i: number, rMin: number, rMax: number) {
-  const r = rMin * Math.pow(rMax / rMin, Math.random());
-  tmp.randomDirection().multiplyScalar(r);
-  if (tmp.z > 12) tmp.z = -tmp.z;
-  tmp.toArray(pPos, i * 3);
-}
-for (let i = 0; i < PARTICLES; i++) spawn(i, 1.5, 90);
-const pGeo = new THREE.BufferGeometry();
-pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-const particles = new THREE.Points(
-  pGeo,
-  new THREE.PointsMaterial({
-    size: 0.09,
-    map: dotTexture(),
-    color: '#93a4ff',
-    transparent: true,
-    opacity: 0.55,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  }),
-);
-world.add(particles);
-
-function dotTexture() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const g = c.getContext('2d')!;
-  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-  grad.addColorStop(0, 'rgba(255,255,255,1)');
-  grad.addColorStop(0.35, 'rgba(255,255,255,0.35)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 64, 64);
-  return new THREE.CanvasTexture(c);
-}
-
-function flowParticles(dLog: number) {
-  if (dLog === 0) return;
-  const k = Math.exp(dLog);
-  for (let i = 0; i < PARTICLES; i++) {
-    tmp.fromArray(pPos, i * 3).multiplyScalar(k);
-    const r = tmp.length();
-    if (r > 95 || tmp.z > 18) spawn(i, 1.2, 4);
-    else if (r < 1.0) spawn(i, 60, 95);
-    else tmp.toArray(pPos, i * 3);
-  }
-  pGeo.attributes.position.needsUpdate = true;
-}
 
 // ---------- Levels ----------
 let traitKey: TraitKey = 'eye';
@@ -186,21 +107,10 @@ function setTrait(k: TraitKey) {
   traitKey = k;
   levels = buildLevels(k);
   for (const l of levels) world.add(l.group);
-  prevLog = logZoom(t);
   ui.setTrait(TRAITS[k]);
   applyEye();
   applyPick();
   shownLevel = -1;
-}
-
-/** Log of the total magnification at zoom position t. */
-function logZoom(tz: number) {
-  let g = 0;
-  for (let i = 0; i < MAX_T; i++) {
-    const f = THREE.MathUtils.clamp(tz - i, 0, 1);
-    g += -Math.log(levels[i].childScale) * f;
-  }
-  return g;
 }
 
 const smooth = THREE.MathUtils.smoothstep;
@@ -232,7 +142,8 @@ function layout(tz: number) {
   // Open a dissolving portal in the parent around the child, sized to the child's apparent height,
   // and fade the child in once it is big enough to read.
   const into = smooth(f, 0.12, 0.6);
-  const out = Math.max(smooth(f, 0.6, 0.95), smooth(Math.log(S), Math.log(8 / parent.engulf), Math.log(32 / parent.engulf)));
+  // On the light background a magnified parent reads as a heavy wall, so it fades early.
+  const out = Math.max(smooth(f, 0.45, 0.85), smooth(Math.log(S), Math.log(3 / parent.engulf), Math.log(14 / parent.engulf)));
   setLevelOpacity(parent, 1 - out, 1 - smooth(f, 0.04, 0.3), 1 - smooth(f, 0.12, 0.4));
   setLevelOpacity(child, into, into * smooth(f, 0.6, 0.95), into * smooth(f, 0.72, 0.98));
   for (const l of levels) l.portal.radius.value.set(-2, -1);
@@ -270,7 +181,6 @@ let yaw = 0;
 let pitch = 0;
 let yawT = 0;
 let pitchT = 0;
-let prevLog = 0;
 
 const ui = createUI({
   onTrait(k) {
@@ -361,8 +271,6 @@ function resize() {
   const h = window.innerHeight;
   renderer.setSize(w, h);
   labelRenderer.setSize(w, h);
-  composer.setSize(w, h);
-  bloom.resolution.set(w, h);
 
   // Fit the content box into the area not covered by the UI, and centre it there.
   const free = ui.freeArea(w, h);
@@ -421,15 +329,11 @@ renderer.setAnimationLoop(() => {
   world.rotation.set(pitch, yaw + Math.sin(time * 0.15) * 0.06, 0);
 
   layout(t);
-  const g = logZoom(t);
-  flowParticles(g - prevLog);
-  prevLog = g;
-  particles.rotation.y = time * 0.004;
 
   for (const l of levels) {
     if (!l.group.visible) continue;
     l.update?.(time, dt);
-    const pulse = 1 + 0.07 * Math.sin(time * 3.2);
+    const pulse = 1 + 0.03 * Math.sin(time * 2);
     for (const p of l.pulses) p.scale.setScalar(pulse);
   }
 
@@ -440,6 +344,6 @@ renderer.setAnimationLoop(() => {
   }
   ui.setProgress(t, spanAt(t));
 
-  composer.render();
+  renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
 });

@@ -1,15 +1,12 @@
 import * as THREE from 'three';
 import { sequenceCenter, type Gene, type TraitData } from '../data';
-import { ACCENT, ACCENT_2, addDiffMarker, clusterSnps, collect, fmtShort, geneColor, label, newLevel, NEUTRAL, ring, type Level } from './common';
+import { ACCENT, ACCENT_2, addDiffMarker, clusterSnps, collect, geneColor, lettersLong, label, newLevel, NEUTRAL, ring, type Level } from './common';
 import { geneAt, H3 } from './region';
 
 export const H4 = 16;
 /** End of pseudoautosomal region 1 on chrY (GRCh38). */
 export const PAR1_END = 2_781_479;
 
-function exonNumber(g: Gene, i: number) {
-  return g.strand === '+' ? i + 1 : g.exons.length - i;
-}
 
 /**
  * Level 3: tens of kilobases of loosened "beads on a string" DNA, with exons, introns and the
@@ -49,14 +46,14 @@ export function buildGeneLevel(t: TraitData): Level {
     const col = new Float32Array(pos.count * 3);
     for (let i = 0; i < pos.count; i++) strandColor(posAtY(pos.getY(i))).toArray(col, i * 3);
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    dna.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, emissive: '#2a3366' })));
+    dna.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55 })));
   }
 
   // Sparse nucleosome beads: active genes are loosely packed.
   const beads = 26;
   const bead = new THREE.InstancedMesh(
     new THREE.SphereGeometry(0.12, 18, 12),
-    new THREE.MeshPhysicalMaterial({ color: '#c9c2ff', roughness: 0.3, clearcoat: 1, opacity: 0.32 }),
+    new THREE.MeshStandardMaterial({ color: '#d8d2c6', roughness: 0.6, opacity: 0.6 }),
     beads,
   );
   const m = new THREE.Matrix4();
@@ -80,37 +77,21 @@ export function buildGeneLevel(t: TraitData): Level {
     body.position.y = (y(a) + y(b)) / 2;
     level.group.add(body);
 
-    const visible: number[] = [];
-    g.exons.forEach(([ea, eb], i) => {
+    g.exons.forEach(([ea, eb]) => {
       const s = Math.max(ea, w0);
       const e = Math.min(eb, w1);
       if (e <= s) return;
-      visible.push(exonNumber(g, i));
       const h = Math.max(y(s) - y(e), 0.05);
       const ex = new THREE.Mesh(
         new THREE.CylinderGeometry(0.3, 0.3, h, 40),
-        new THREE.MeshPhysicalMaterial({
-          color: col,
-          emissive: col,
-          emissiveIntensity: 0.55,
-          roughness: 0.25,
-          clearcoat: 1,
-          opacity: 0.6,
-          depthWrite: false,
-        }),
+        new THREE.MeshStandardMaterial({ color: col, roughness: 0.5, opacity: 0.9, depthWrite: false }),
       );
       ex.position.y = (y(s) + y(e)) / 2;
       level.group.add(ex);
     });
 
-    const arrow = g.strand === '+' ? '↓' : '↑';
-    const range = visible.length
-      ? visible.length === 1
-        ? `exon ${visible[0]}`
-        : `exons ${Math.min(...visible)}–${Math.max(...visible)}`
-      : 'intron only';
     const l = label(
-      `<b style="color:#${col.getHexString()}">${g.name} ${arrow}</b><span>${range} in view · gene is ${fmtShort(g.end - g.start)}</span>`,
+      `<b style="color:#${col.getHexString()}">${g.name}</b><span>${lettersLong(g.end - g.start)} long</span>`,
       t.focusGenes.includes(g.name) ? 'gene focus' : 'gene',
       true,
     );
@@ -135,10 +116,9 @@ export function buildGeneLevel(t: TraitData): Level {
   let text: string;
   if (t.variant) {
     const v = t.variant;
-    const size = v.len > 1 ? `${v.len} letters` : 'a single letter';
-    text = `<b>${v.id}</b><span>${v.gene} ${v.location} · ${size}</span>`;
+    text = `<b>${v.len > 1 ? 'The key letters' : 'The key letter'}</b><span>inside ${v.gene}</span>`;
   } else {
-    text = `<b>Start codon</b><span>where the SRY protein begins</span>`;
+    text = `<b>Start signal</b><span>where SRY’s recipe begins</span>`;
   }
   const c = label(text, 'callout left', true);
   c.center.set(1, 0.5);
@@ -149,7 +129,7 @@ export function buildGeneLevel(t: TraitData): Level {
     const par = ring(0.6, 0.012, ACCENT_2);
     par.position.y = y(PAR1_END);
     level.group.add(par);
-    const pl = label('<b>PAR1 boundary</b><span>above: shared with X · below: Y-only</span>', 'callout left minor', true);
+    const pl = label('<b>Shared with X above</b><span>Y-only below</span>', 'callout left minor', true);
     pl.center.set(1, 0.5);
     pl.position.set(-0.7, y(PAR1_END), 0);
     level.group.add(pl);

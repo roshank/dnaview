@@ -5,7 +5,7 @@ import {
   ACCENT_2,
   addDiffMarker,
   collect,
-  glowMaterial,
+  markMaterial,
   label,
   newLevel,
   ring,
@@ -67,14 +67,9 @@ function chromatidGeometry(chr: Chromosome, h: number, R: number, samples: numbe
 }
 
 function chromosomeMaterial(opacity: number) {
-  return new THREE.MeshPhysicalMaterial({
+  return new THREE.MeshStandardMaterial({
     vertexColors: true,
-    roughness: 0.48,
-    clearcoat: 0.6,
-    clearcoatRoughness: 0.3,
-    sheen: 0.7,
-    sheenColor: new THREE.Color('#b9a8ff'),
-    sheenRoughness: 0.45,
+    roughness: 0.78,
     transparent: true,
     opacity,
   });
@@ -126,13 +121,14 @@ function addGwasBands(parent: THREE.Object3D, t: TraitData, chr: Chromosome, poi
   const bands = new THREE.InstancedMesh(
     // Half-height bands leave dark gaps, so the chromosome stays visible under thousands of hits.
     new THREE.CylinderGeometry(radius, radius, Math.max(size * unitsPerBp * 0.5, 0.006), 24, 1, true),
-    glowMaterial(ACCENT_2, 0.7),
+    markMaterial('#ffffff', 0.95),
     bins.length,
   );
-  const base = new THREE.Color(ACCENT_2);
+  const faint = new THREE.Color('#e8dac6');
+  const strong = new THREE.Color(ACCENT_2);
   bins.forEach(([bin, count], i) => {
     bands.setMatrixAt(i, new THREE.Matrix4().setPosition(point((bin + 0.5) * size)));
-    bands.setColorAt(i, base.clone().multiplyScalar(Math.min(1, 0.12 + count / 28)));
+    bands.setColorAt(i, faint.clone().lerp(strong, Math.min(0.75, count / 16)));
   });
   parent.add(bands);
 }
@@ -151,7 +147,7 @@ export function buildGenomeLevel(key: TraitKey, t: TraitData): Level {
     const h = karyoHeight(chr);
     const cenY = row === 0 ? 2.9 : -3.25;
     const top = cenY + ((chr.centromere[0] + chr.centromere[1]) / 2 / chr.length) * h;
-    const opacity = primary.has(chr.name) ? 1 : related.has(chr.name) ? 0.8 : 0.28;
+    const opacity = primary.has(chr.name) ? 1 : related.has(chr.name) ? 0.85 : 0.42;
     const c = makeChromosome(chr, h, R0, 150, 28, opacity);
     c.obj.position.set((col - 5.5) * 1.42, top - h / 2, 0);
     level.group.add(c.obj);
@@ -193,7 +189,7 @@ export function buildGenomeLevel(key: TraitKey, t: TraitData): Level {
   // Mitochondrial DNA: a separate 16.6 kb circle, outside the nucleus.
   const mt = new THREE.Mesh(
     new THREE.TorusGeometry(0.26, 0.055, 16, 64),
-    new THREE.MeshPhysicalMaterial({ color: '#9fd8c6', roughness: 0.4, clearcoat: 0.5, transparent: true, opacity: 0.45 }),
+    new THREE.MeshStandardMaterial({ color: '#a9bcc4', roughness: 0.7, transparent: true, opacity: 0.7 }),
   );
   mt.position.set(9.4, -4.4, 0);
   level.group.add(mt);
@@ -221,8 +217,8 @@ export function buildChromosomeLevel(t: TraitData, parentScale: number): Level {
   const y = (pos: number) => H1 / 2 - (pos / chr.length) * H1;
   const [c0, c1] = chr.centromere;
   const arms: [string, number][] = [
-    ['p arm', c0 / 2],
-    ['q arm', (c1 + chr.length) / 2],
+    ['short arm', c0 / 2],
+    ['long arm', (c1 + chr.length) / 2],
   ];
   for (const [text, pos] of arms) {
     if (pos / chr.length < 0.04) continue; // acrocentric p arms are too short to label
@@ -239,24 +235,13 @@ export function buildChromosomeLevel(t: TraitData, parentScale: number): Level {
   const target = t.bandAt;
   const rc = (t.region[0] + t.region[1]) / 2;
   const ty = y(rc);
-  let lastY = Infinity;
-  for (const b of chr.bands) {
-    const by = y((b[0] + b[1]) / 2);
-    if (b[2] === target) continue;
-    if ((b[1] - b[0]) / chr.length < 0.014 || Math.abs(by - ty) < 0.75 || lastY - by < 0.34) continue;
-    const l = label(`${chr.name}${b[2]}`, 'band');
-    l.center.set(0, 0.5);
-    l.position.set(R * 2.3, by, 0);
-    level.group.add(l);
-    lastY = by;
-  }
 
   const anchor = c.axisPoint(rc);
   const r = ring(R * 1.35, 0.03, ACCENT);
   r.position.copy(anchor);
   r.userData.pulse = true;
   level.group.add(r);
-  const callout = label(`<b>${chr.name}${target}</b><span>${t.focusGenes.join(' · ')}</span>`, 'callout', true);
+  const callout = label(`<b>${t.focusGenes.join(' · ')}</b><span>band ${chr.name}${target}</span>`, 'callout', true);
   callout.center.set(0, 0.5);
   callout.position.set(R * 2.3, ty, 0);
   level.group.add(callout);

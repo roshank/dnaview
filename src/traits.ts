@@ -4,6 +4,9 @@ import type { PickerSpec } from './picker';
 
 export interface LevelText {
   title: string;
+  /** One or two plain-language sentences: the idea to take away at this zoom level. */
+  lead: string;
+  /** The fuller scientific explanation, shown under "The science". */
   body: string;
   facts: [string, string][];
 }
@@ -69,12 +72,14 @@ function eye(): Trait {
     crumbs: ['Genome', 'Chromosome 15', `15${t.bandAt}`, 'HERC2 → OCA2', v.id],
     levels: [
       {
-        title: 'Eye color is written in a handful of places',
+        title: "Eye color comes from pigment",
+        lead: "Your eye color depends on how much brown pigment sits in your iris. A few genes set that amount, and one spot on chromosome 15 matters most.",
         body: `Eye color comes down to how much <b>melanin</b> pigment sits in the front of the iris. Several genes affect it, highlighted here, but the biggest single effect is on <b>chromosome 15</b>.`,
         facts: [...GENOME_FACTS, ['Other eye-color genes', t.related.map((r) => r.name).join(', ')]],
       },
       {
-        title: 'Chromosome 15',
+        title: "Chromosome 15",
+        lead: "Every chromosome is one very long piece of DNA. This one holds the biggest eye-color switch.",
         body: `This chromosome holds ${mb(chr.length)} base pairs. Like every chromosome before cell division, it is two identical copies (sister chromatids) joined at the centromere. The stripes are the Giemsa-stain bands geneticists use as map coordinates. We're heading to band <b>15q${t.bandAt.slice(1)}</b>.`,
         facts: [
           ['Length', `${mb(chr.length)} bp`],
@@ -83,7 +88,8 @@ function eye(): Trait {
         ],
       },
       {
-        title: 'Two neighbouring genes: OCA2 and HERC2',
+        title: "A pigment gene and its dial",
+        lead: "OCA2 helps make pigment. Its neighbor HERC2 holds the dial that controls how much OCA2 gets used.",
         body: `Zoomed in, the chromosome is a <b>chromatin fiber</b>: DNA wrapped around histone proteins (each bead is a nucleosome) and coiled. <b style="color:var(--amber)">OCA2</b> makes the P protein, which melanin-producing cells need. Its neighbour <b style="color:var(--cyan)">HERC2</b> doesn't make pigment, but it contains the switch for OCA2.`,
         facts: [
           ['OCA2', `${kb(oca2.end - oca2.start)} bases`],
@@ -92,7 +98,8 @@ function eye(): Trait {
         ],
       },
       {
-        title: 'A switch inside the wrong gene',
+        title: "The dial is one letter",
+        lead: "The dial is a single letter tucked inside HERC2, far from where OCA2 itself begins. DNA can control genes from a distance.",
         body: `Glowing blocks are <b>exons</b>, the parts copied into protein. Deep inside HERC2 intron ${v.intron} sits an <b>enhancer</b>: DNA that loops over to turn up OCA2, about ${kb(v.pos - oca2.end)} bases away. One letter in that enhancer, <b>${v.id}</b>, sets how strong the switch is.`,
         facts: [
           ['Variant', v.id],
@@ -101,7 +108,8 @@ function eye(): Trait {
         ],
       },
       {
-        title: 'One base pair',
+        title: "One letter turns the dial",
+        lead: "Swap this one letter and the dial turns down: less pigment. With two copies, eyes are usually blue. Try the colors below.",
         body: `This is the double helix: two sugar-phosphate backbones with paired bases (A–T, C–G) between them. The highlighted pair is <b>${v.id}</b>. With <b>A</b> the enhancer stays active, giving more OCA2 and more melanin, which usually means brown eyes. With <b>G</b> the switch is weaker; people with two G copies most often have blue eyes. Other genes fine-tune green, hazel and grey.`,
         facts: [
           ['Position', `chr15:${(v.pos + 1).toLocaleString('en-US')}`],
@@ -132,12 +140,14 @@ function lactose(): Trait {
     crumbs: ['Genome', 'Chromosome 2', `2${t.bandAt}`, 'LCT · MCM6', v.id],
     levels: [
       {
-        title: 'Can adults digest milk?',
+        title: "Can adults digest milk?",
+        lead: "Most mammals stop digesting milk after childhood. Whether you can as an adult depends mostly on one switch on chromosome 2.",
         body: `Most mammals, and most people, stop making lactase, the enzyme that breaks down milk sugar, after childhood. Keeping it into adulthood is called <b>lactase persistence</b>, and in many people it traces to one spot on <b>chromosome 2</b>.`,
         facts: GENOME_FACTS,
       },
       {
-        title: 'Chromosome 2',
+        title: "Chromosome 2",
+        lead: "This is the second-largest chromosome. The milk switch sits in the middle of its long arm.",
         body: `Chromosome 2 is the second-largest at ${mb(chr.length)} base pairs. It formed when two ancestral ape chromosomes fused, which is why humans have 23 pairs while chimpanzees have 24. We're heading to band <b>2${t.bandAt}</b>.`,
         facts: [
           ['Length', `${mb(chr.length)} bp`],
@@ -146,7 +156,8 @@ function lactose(): Trait {
         ],
       },
       {
-        title: 'LCT, the lactase gene',
+        title: "The milk-sugar gene",
+        lead: "LCT is the recipe for lactase, the enzyme that breaks down the sugar in milk.",
         body: `This stretch of chromatin fiber carries <b style="color:var(--amber)">LCT</b>, which encodes lactase, the enzyme made in the lining of the small intestine. Right next to it is <b style="color:var(--cyan)">MCM6</b>, a gene for DNA copying that has nothing to do with milk, except that it holds LCT's switch.`,
         facts: [
           ['LCT', `${kb(lct.end - lct.start)} bases, ${lct.exons.length} exons`],
@@ -155,7 +166,8 @@ function lactose(): Trait {
         ],
       },
       {
-        title: 'The switch is in the neighbour',
+        title: "The switch is next door",
+        lead: "Surprisingly, LCT’s on/off switch isn’t inside LCT. It sits in the neighboring gene.",
         body: `About ${kb(upstream)} bases upstream of where LCT starts, inside <b>intron ${v.intron} of MCM6</b>, sits an enhancer that keeps LCT running in intestinal cells. The variant <b>${v.id}</b> is famous enough to have its own nickname: <b>−13910 C&gt;T</b>, after its distance from LCT.`,
         facts: [
           ['Variant', `${v.id} (−13910)`],
@@ -164,7 +176,8 @@ function lactose(): Trait {
         ],
       },
       {
-        title: 'One base pair',
+        title: "One letter keeps it on",
+        lead: "One letter decides whether the switch stays on after childhood. Try both versions below.",
         body: `Shown on the chromosome's “+” strand, the ancestral letter is <b>G</b>, which is the <b>C</b> of −13910 C&gt;T when read on LCT's strand. The <b>A</b> version (T on LCT's strand) keeps lactase on into adulthood. It is common in people of northern European ancestry. Other variants nearby arose independently in East African and Middle Eastern populations, a textbook case of convergent evolution.`,
         facts: [
           ['Position', `chr2:${(v.pos + 1).toLocaleString('en-US')}`],
@@ -199,12 +212,14 @@ function sex(): Trait {
     crumbs: ['Genome', 'Chromosome Y', `Y${t.bandAt}`, 'SRY', 'Start codon'],
     levels: [
       {
-        title: 'The 23rd pair',
+        title: "The 23rd pair",
+        lead: "Most people have two X chromosomes or an X and a Y. One small gene on the Y usually tips development toward male.",
         body: `22 of our chromosome pairs match regardless of sex. The 23rd is the sex chromosomes: usually <b>XX</b> or <b>XY</b>. The X is large and gene-rich. The Y is small, and its most important job comes down to a single gene. Genes determine <b>biological sex</b>, not gender identity, and natural variations exist (XXY, X, XX with SRY, and more).`,
         facts: [...GENOME_FACTS, ['X vs Y', `${mb(x.length)} vs ${mb(y.length)} bp`]],
       },
       {
-        title: 'Chromosome Y',
+        title: "The Y chromosome",
+        lead: "The Y is one of the smallest chromosomes and carries only a few dozen genes.",
         body: `At ${mb(y.length)} base pairs, Y is one of the smallest chromosomes and carries only a few dozen protein-coding genes. Its tips are <b>pseudoautosomal regions</b> (PARs) that match the X, so X and Y can pair up when sperm are made. Much of the long arm is repetitive DNA that is hard even to sequence. We're heading to <b>Y${t.bandAt}</b>, on the short arm.`,
         facts: [
           ['Length', `${mb(y.length)} bp`],
@@ -213,7 +228,8 @@ function sex(): Trait {
         ],
       },
       {
-        title: 'Right at the edge of the shared zone',
+        title: "Just past the shared zone",
+        lead: "The tips of X and Y match each other. The key gene, SRY, sits just past that shared stretch, on Y-only DNA.",
         body: `This fiber spans the end of <b>PAR1</b>, the region X and Y share. Genes above it (like CD99) exist on both. Just past the boundary, on Y-only DNA, sits <b style="color:var(--amber)">SRY</b>, the sex-determining region Y gene.`,
         facts: [
           ['PAR1 ends at', `chrY:${PAR1_END.toLocaleString('en-US')}`],
@@ -222,7 +238,8 @@ function sex(): Trait {
         ],
       },
       {
-        title: 'SRY: one small gene, one big decision',
+        title: "A small gene, a big switch",
+        lead: "SRY is tiny, but early in development it flips the switch that starts the path toward testes.",
         body: `SRY is a single exon of just ${(sry.end - sry.start).toLocaleString('en-US')} bases, and it reads upward here because it sits on the minus strand. Around week 7 of development, its protein switches the early gonads onto the testis pathway. Without SRY, they develop as ovaries. Because it sits so close to PAR1, SRY occasionally crosses onto an X during sperm formation.`,
         facts: [
           ['Gene size', `${(sry.end - sry.start).toLocaleString('en-US')} bp, 1 exon`],
@@ -231,7 +248,8 @@ function sex(): Trait {
         ],
       },
       {
-        title: 'Where SRY begins',
+        title: "Where the gene begins",
+        lead: "These three letters mark where SRY’s instructions start, like the first words of a recipe.",
         body: `These three glowing base pairs are SRY's <b>start codon</b>, where the protein-making machinery begins reading. SRY is on the minus strand, so on the “+” strand shown here it reads <b>CAT</b>, which is <b>ATG</b> on SRY's own strand. Changes in SRY can cause XY female development (Swyer syndrome), and an SRY moved onto an X can lead to XX male development.`,
         facts: [
           ['Start codon', `chrY:${(t.startCodon![0] + 1).toLocaleString('en-US')}–${t.startCodon![1].toLocaleString('en-US')}`],
@@ -268,12 +286,14 @@ function blood(): Trait {
     },
     levels: [
       {
-        title: 'One gene decides your blood type',
+        title: "One gene decides your blood type",
+        lead: "Your blood type comes from a single gene. You get one copy from each parent, and together they decide A, B, AB or O.",
         body: `Your ABO blood type is set by a single gene, <b>ABO</b>, on <b>chromosome 9</b>. Your two copies, one from each parent, fully decide whether you are A, B, AB or O. (The + or − is a different gene, RHD, on chromosome 1.)`,
         facts: [...GENOME_FACTS, ['Genes involved', '1 (ABO)']],
       },
       {
-        title: 'Chromosome 9',
+        title: "Chromosome 9",
+        lead: "That gene, ABO, sits near the tip of chromosome 9.",
         body: `Chromosome 9 holds ${mb(chr.length)} base pairs. ABO sits near the tip of its long arm, in band <b>9${t.bandAt}</b>.`,
         facts: [
           ['Length', `${mb(chr.length)} bp`],
@@ -282,7 +302,8 @@ function blood(): Trait {
         ],
       },
       {
-        title: 'ABO makes a sugar-adding enzyme',
+        title: "A recipe for a sugar tag",
+        lead: "ABO is a recipe for a tiny tool that sticks a sugar tag onto red blood cells. A and B add different sugars. O adds none.",
         body: `<b style="color:var(--amber)">ABO</b> builds an enzyme that adds one sugar to the surface of red blood cells. The <b>A</b> version adds one sugar (N-acetylgalactosamine), the <b>B</b> version a different one (galactose). <b>O</b> makes no working enzyme, so neither sugar is added. Your immune system reacts to whichever sugars you lack, which is why transfusions must match.`,
         facts: [
           ['ABO gene', `${kb(abo.end - abo.start)} bases, ${abo.exons.length} exons`],
@@ -291,7 +312,8 @@ function blood(): Trait {
         ],
       },
       {
-        title: 'Every difference sits in the last two exons',
+        title: "A few letters apart",
+        lead: "A, B and O differ by just a handful of letters near the end of the gene.",
         body: `The letter that makes O sits in <b>exon 6</b>. The four letters that turn the A enzyme into the B enzyme are all in <b>exon 7</b>. Fun fact: the reference genome itself carries the O version, so RefSeq even labels ABO here as non-coding.`,
         facts: [
           ['O letter', `${v.gene} ${v.location}`],
@@ -300,7 +322,8 @@ function blood(): Trait {
         ],
       },
       {
-        title: 'One missing letter makes type O',
+        title: "One missing letter makes O",
+        lead: "The O version is simply missing this one letter. That gap garbles the rest of the recipe, so no sugar gets added. Pick a type below to compare.",
         body: `The glowing gap is where the A and B versions have one more letter (a G on ABO's own strand, C on the "+" strand shown). Without it, the reading frame shifts and the enzyme stops after <b>117</b> of its <b>354</b> amino acids, so no sugar is added: type <b>O</b>. O is recessive: one working copy is enough for A or B.`,
         facts: [
           ['Position', `chr9:${(v.pos).toLocaleString('en-US')}–${(v.pos + 1).toLocaleString('en-US')}`],
@@ -312,7 +335,7 @@ function blood(): Trait {
     notes: { '-': 'missing → enzyme cut short (type O)', C: 'present → working enzyme (A or B)' },
     picker: {
       title: 'Pick a blood type',
-      subtitle: 'Glowing DNA shows what would change',
+      subtitle: 'The DNA that would change is highlighted',
       options: [
         { key: 'O', label: 'O', color: '#cbd5e1', outcome: 'Two broken copies: no enzyme, so neither A nor B sugar.' },
         { key: 'A', label: 'A', color: '#f87171', outcome: 'One working A copy is enough; the other copy here is O.' },
@@ -344,12 +367,14 @@ function sickle(): Trait {
     },
     levels: [
       {
-        title: 'One letter, a whole-body disease',
+        title: "One letter, a whole-body disease",
+        lead: "Hemoglobin carries oxygen in your blood. A single letter in its gene is behind sickle cell disease.",
         body: `Hemoglobin carries oxygen inside red blood cells. A single letter in its <b>beta-globin</b> gene, <b>HBB</b> on <b>chromosome 11</b>, is behind sickle cell disease.`,
         facts: [...GENOME_FACTS, ['Letters involved', '1']],
       },
       {
-        title: 'Chromosome 11',
+        title: "Chromosome 11",
+        lead: "The hemoglobin gene, HBB, sits near the tip of chromosome 11.",
         body: `Chromosome 11 holds ${mb(chr.length)} base pairs. HBB sits near the tip of the short arm, in band <b>11${t.bandAt}</b>.`,
         facts: [
           ['Length', `${mb(chr.length)} bp`],
@@ -358,7 +383,8 @@ function sickle(): Trait {
         ],
       },
       {
-        title: 'The globin family',
+        title: "A family of blood genes",
+        lead: "HBB sits among related genes. Some are used before birth and others after, roughly in the order they line up.",
         body: `HBB sits in the <b>beta-globin cluster</b>: embryonic, fetal (<b>HBG1</b>, <b>HBG2</b>) and adult (<b>HBD</b>, <b style="color:var(--amber)">HBB</b>) globin genes, lined up in roughly the order they switch on during development. Around them are dozens of smell-receptor (OR) genes.`,
         facts: [
           ['HBB', `${hbb.end - hbb.start} bases, ${hbb.exons.length} exons`],
@@ -367,7 +393,8 @@ function sickle(): Trait {
         ],
       },
       {
-        title: 'A small gene with a big job',
+        title: "A small gene",
+        lead: "HBB is short, and the change sits right near its start.",
         body: `HBB is only about ${(hbb.end - hbb.start).toLocaleString('en-US')} bases long, in three exons. The variant <b>${v.id}</b> sits in <b>${v.location}</b>, in the codon for the sixth amino acid of beta-globin.`,
         facts: [
           ['Variant', v.id],
@@ -376,7 +403,8 @@ function sickle(): Trait {
         ],
       },
       {
-        title: 'GAG → GTG',
+        title: "One letter swap",
+        lead: "Swapping this letter changes one building block of hemoglobin. With two copies, red blood cells can bend into sickles. With one, people are usually healthy.",
         body: `On HBB's own strand the sixth codon changes from <b>GAG</b> (glutamic acid) to <b>GTG</b> (valine); on the "+" strand shown here that is <b>T → A</b>. The new valine is sticky: when oxygen is low, hemoglobin clumps into fibers that bend red cells into sickles. <b>One copy</b> (sickle cell trait) is usually harmless and partly protects against severe malaria, which is why the variant is common where malaria is. <b>Two copies</b> cause sickle cell disease.`,
         facts: [
           ['Position', `chr11:${(v.pos + 1).toLocaleString('en-US')}`],
@@ -388,7 +416,7 @@ function sickle(): Trait {
     notes: { T: 'typical: GAG → glutamic acid', A: 'sickle: GTG → valine' },
     picker: {
       title: 'Pick a hemoglobin type',
-      subtitle: 'Glowing DNA shows what would change',
+      subtitle: 'The DNA that would change is highlighted',
       options: [
         { key: 'typical', label: 'Typical', color: '#ef4444', outcome: 'Two typical copies: normal hemoglobin (HbAA).' },
         { key: 'trait', label: 'Trait', color: '#f59e0b', outcome: 'Sickle cell trait (HbAS): one copy. Usually no symptoms, and some protection from severe malaria.' },
@@ -423,12 +451,14 @@ function brca(): Trait {
     },
     levels: [
       {
-        title: 'A risk gene, not a fate',
+        title: "A risk gene, not a fate",
+        lead: "BRCA1 helps repair damaged DNA. Some changes in it raise the chance of certain cancers a lot. They raise the chance; they don’t guarantee cancer.",
         body: `<b>BRCA1</b>, on <b>chromosome 17</b>, helps repair broken DNA. Harmful variants in it sharply raise the risk of breast and ovarian cancer. Even so, only about <b>5–10%</b> of breast cancers are linked to inherited variants like these. <b style="color:var(--amber)">BRCA2</b>, on chromosome 13, plays a similar role.`,
         facts: [...GENOME_FACTS, ['Main genes', 'BRCA1, BRCA2']],
       },
       {
-        title: 'Chromosome 17',
+        title: "Chromosome 17",
+        lead: "BRCA1 sits on chromosome 17, one of the most gene-packed chromosomes.",
         body: `Chromosome 17 holds ${mb(chr.length)} base pairs and is one of the most gene-dense chromosomes. BRCA1 sits on the long arm, in band <b>17${t.bandAt}</b>.`,
         facts: [
           ['Length', `${mb(chr.length)} bp`],
@@ -437,7 +467,8 @@ function brca(): Trait {
         ],
       },
       {
-        title: 'A DNA repair gene',
+        title: "A DNA repair kit",
+        lead: "BRCA1 is the recipe for a repair tool that patches broken DNA before errors pile up.",
         body: `<b style="color:var(--amber)">BRCA1</b>'s protein helps fix the most dangerous kind of DNA damage, a break through both strands, by copying the matching sequence from the cell's other copy. Cells that can't do this pile up errors that can lead to cancer.`,
         facts: [
           ['BRCA1', `${kb(b1.end - b1.start)} bases, ${b1.exons.length} exons`],
@@ -446,7 +477,8 @@ function brca(): Trait {
         ],
       },
       {
-        title: 'Right at the start of the gene',
+        title: "Right at the start",
+        lead: "This change sits near the very start of the recipe, so it ruins almost all of it.",
         body: `The variant <b>185delAG</b> (c.68_69del) sits in <b>${v.location}</b>, just after the start of the protein-coding sequence. A change this early wrecks almost the entire protein.`,
         facts: [
           ['Variant', `185delAG (${v.id})`],
@@ -455,7 +487,8 @@ function brca(): Trait {
         ],
       },
       {
-        title: 'Two missing letters',
+        title: "Two missing letters",
+        lead: "Losing two letters scrambles everything after them. Carriers still have one working copy, which is why risk rises but cancer isn’t certain.",
         body: `Deleting <b>AG</b> (shown here as CT on the "+" strand) shifts the reading frame, so the protein stops after <b>38</b> of its <b>1,863</b> amino acids. Carriers still have one working copy; cancer usually begins when a cell loses that one too. Women who carry a harmful BRCA1 variant have about a <b>72%</b> chance of breast cancer and <b>44%</b> of ovarian cancer by age 80, versus about 13% for breast cancer overall. About 1% of Ashkenazi Jewish people carry this exact variant.`,
         facts: [
           ['Position', `chr17:${(v.pos + 1).toLocaleString('en-US')}–${(v.pos + 2).toLocaleString('en-US')}`],
@@ -467,7 +500,7 @@ function brca(): Trait {
     notes: { CT: 'typical: both letters present', '--': 'deleted → protein cut short' },
     picker: {
       title: 'Pick a BRCA1 status',
-      subtitle: 'Glowing DNA shows what would change',
+      subtitle: 'The DNA that would change is highlighted',
       options: [
         { key: 'typical', label: 'No variant', color: '#34d399', outcome: 'Typical BRCA1: average risk. For women, about 1 in 8 (13%) lifetime risk of breast cancer.' },
         {
@@ -507,12 +540,14 @@ function height(): Trait {
     },
     levels: [
       {
-        title: 'Height is written everywhere',
+        title: "Height is written everywhere",
+        lead: "Height is mostly inherited, but no single gene decides it. Each glowing mark is a spot in DNA that nudges height a tiny bit.",
         body: `Every glowing band marks DNA where studies found variants linked to height: <b>${hits}</b> distinct variants in the GWAS Catalog, spread over every chromosome. Height is about 80% heritable, yet no single gene decides it.`,
         facts: [...GENOME_FACTS, ['Height variants (GWAS Catalog)', hits]],
       },
       {
-        title: 'Chromosome 12',
+        title: "Chromosome 12",
+        lead: "This chromosome alone has over a thousand of those spots.",
         body: `Chromosome 12 alone has ${chrHits} height-linked variants. We're heading to band <b>12${t.bandAt}</b> and <b>HMGA2</b>, one of the first height genes ever found (2007).`,
         facts: [
           ['Length', `${mb(chr.length)} bp`],
@@ -521,7 +556,8 @@ function height(): Trait {
         ],
       },
       {
-        title: 'HMGA2, a growth regulator',
+        title: "A growth gene",
+        lead: "HMGA2 helps control growth. It was one of the first height genes ever found.",
         body: `<b style="color:var(--amber)">HMGA2</b> helps control how cells grow and divide during development. Rare mutations that wreck it can change stature a lot, but the common variant we're zooming into has only a small effect.`,
         facts: [
           ['HMGA2', `${kb(hmga2.end - hmga2.start)} bases, ${hmga2.exons.length} exons`],
@@ -530,7 +566,8 @@ function height(): Trait {
         ],
       },
       {
-        title: 'Outside the protein code',
+        title: "A volume knob, not a blueprint",
+        lead: "This letter doesn’t change the protein itself. It changes how much of it gets made.",
         body: `The variant <b>${v.id}</b> sits in HMGA2's <b>${v.location}</b>, a tail of the gene's message that helps control how much protein is made, not the protein's shape. Most height variants are like this: small tweaks to how much, not what.`,
         facts: [
           ['Variant', v.id],
@@ -539,7 +576,8 @@ function height(): Trait {
         ],
       },
       {
-        title: 'One letter ≈ 4 millimeters',
+        title: "One letter, about 4 millimeters",
+        lead: "One letter here shifts height by about 4 mm. Thousands of nudges like this add up to how tall you are.",
         body: `Each <b>C</b> copy here adds about <b>0.4 cm</b> on average compared with T. That is one of the largest effects of any common height variant. To explain most of the genetic part of height, a 2022 study of 5.4 million people needed <b>12,111</b> independent variants. The same letter is also linked to birth weight and head size.`,
         facts: [
           ['Position', `chr12:${(v.pos + 1).toLocaleString('en-US')}`],
@@ -556,12 +594,13 @@ function height(): Trait {
   };
 }
 
+/** Ordered from the tightest link between DNA and trait to the loosest. */
 export const TRAITS: Record<TraitKey, Trait> = {
   blood: blood(),
   sickle: sickle(),
   sex: sex(),
-  lactose: lactose(),
   eye: eye(),
+  lactose: lactose(),
   brca: brca(),
   height: height(),
 };
