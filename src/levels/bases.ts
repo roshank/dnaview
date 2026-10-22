@@ -13,8 +13,14 @@ const FADED = new THREE.Color('#ddd6ca');
 export interface BasesLevel extends Level {
   /** Indices (into the sequence) that are highlighted. */
   highlight: number[];
-  /** Replace the highlighted letters ("+" strand); "-" leaves a gap, as in a deletion. */
-  setAllele(bases: string): void;
+  /**
+   * Show the key letters ("+" strand; "-" leaves a gap, as in a deletion). The helix draws `one`;
+   * `two`, when given, is the second copy of the chromosome, named in the label. `silent` restores
+   * a state without the change animation, e.g. when returning to a trait.
+   */
+  setCopies(one: string, two?: string, silent?: boolean): void;
+  /** A line under the label for changes that happened outside this 64-letter view ('' for none). */
+  setElsewhere(text: string): void;
 }
 
 /** Level 4: the double helix itself, 64 base pairs of the real GRCh38 sequence. */
@@ -120,7 +126,10 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
     addDiffMarker(level, level.group, [t.variant.id], new THREE.Vector3(0, hy, 0), R * 1.85, -R * 1.9, -2.1);
   }
 
-  let before = '';
+  // What changed in the last update, for the label: copy 1 (drawn) or only copy 2.
+  let change: { copy: 1 | 2; from: string; to: string } | null = null;
+  let second: string | undefined;
+  let elsewhere = '';
   const paint = () => {
     for (const { i, top, bottom } of hlMeshes) {
       const a = new THREE.Color(BASE_COLORS[seq[i]]);
@@ -140,27 +149,43 @@ export function buildBasesLevel(t: TraitData, title: string, notes: Record<strin
     const codon = level.highlight.map((i) => seq[i]).join('');
     const show = (c: string) => (/^-+$/.test(c) ? 'gap' : c);
     const what = codon.length > 1 ? 'Letters' : 'Letter';
-    // Right after a change, say what it changed from.
+    // Right after a change, say which copy changed and what it changed from.
     const head = !t.variant
       ? `Start signal · ${codon}`
-      : before && before !== codon
-        ? `${what} ${show(before)} → ${show(codon)}`
-        : /^-+$/.test(codon)
-          ? `${codon.length > 1 ? `${codon.length} letters` : 'Letter'} missing`
-          : `${what} ${codon}`;
-    callout.element.innerHTML = `<b>${head}</b><span>${notes[codon] ?? ''}</span>`;
+      : change?.copy === 1
+        ? `${what} ${show(change.from)} → ${show(change.to)}`
+        : change?.copy === 2
+          ? `2nd copy: ${show(change.from)} → ${show(change.to)}`
+          : /^-+$/.test(codon)
+            ? `${codon.length > 1 ? `${codon.length} letters` : 'Letter'} missing`
+            : `${what} ${codon}`;
+    const copyNote =
+      second === undefined ? ''
+      : second === codon ? 'same in both copies · '
+      : change?.copy === 2 ? ''
+      : `2nd copy: ${show(second)} · `;
+    callout.element.innerHTML = `<b>${head}</b><span>${copyNote}${notes[codon] ?? ''}</span>${elsewhere ? `<em>${elsewhere}</em>` : ''}`;
+  };
+  level.setElsewhere = (text) => {
+    if (text === elsewhere) return;
+    elsewhere = text;
+    paint();
   };
   let popPending = false;
-  level.setAllele = (bases: string) => {
+  level.setCopies = (one, two, silent = false) => {
     const old = level.highlight.map((i) => seq[i]).join('');
     level.highlight.forEach((i, k) => {
-      if (k < bases.length) seq[i] = bases[k];
+      if (k < one.length) seq[i] = one[k];
     });
     const now = level.highlight.map((i) => seq[i]).join('');
-    if (now !== old) {
-      before = old;
-      popPending = true;
-    }
+    const oldSecond = second;
+    second = two;
+    change =
+      silent ? null
+      : now !== old ? { copy: 1, from: old, to: now }
+      : two !== undefined && oldSecond !== undefined && two !== oldSecond ? { copy: 2, from: oldSecond, to: two }
+      : null;
+    if (change) popPending = true;
     paint();
   };
   paint();

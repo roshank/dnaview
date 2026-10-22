@@ -76,7 +76,10 @@ export function createUI(h: Handlers) {
   let pickedAllele = '';
   const studio = createEyeStudio(h.onEyeColor);
   const picker = createPickerPanel(h.onPick);
-  $('.influence').after(studio.el, picker.el);
+  const offview = document.createElement('p');
+  offview.className = 'offview';
+  offview.hidden = true;
+  $('.influence').after(studio.el, picker.el, offview);
   let readout = '';
 
   // Phone layout: a bottom sheet that drags or taps between a short and a tall height. The 3D
@@ -216,6 +219,16 @@ export function createUI(h: Handlers) {
       studio.set(current, previous, changes);
       pickedAllele = PROFILES[current].rs12913832[0];
       if (trait.key === 'eye' && level === 4) $('.seq').innerHTML = sequenceStrip();
+    },
+    /** Genes whose changed letters can't be seen at the current zoom level. */
+    setOffView(spots: { gene: string; count: number }[]) {
+      offview.hidden = spots.length === 0 || (trait.key !== 'eye' && !trait.picker);
+      const total = spots.reduce((s, x) => s + x.count, 0);
+      const where =
+        spots.length === 1 ? `elsewhere in ${spots[0].gene}` : `outside this view (${spots.map((x) => (x.count > 1 ? `${x.count} in ${x.gene}` : x.gene)).join(', ')})`;
+      offview.textContent = total
+        ? `${total} more changed letter${total > 1 ? 's are' : ' is'} ${where}. Zoom out to see ${total > 1 ? 'them' : 'it'}.`
+        : '';
     },
     setLevel(i: number) {
       level = i;
