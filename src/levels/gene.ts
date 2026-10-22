@@ -139,7 +139,7 @@ export function buildGeneLevel(t: TraitData): Level {
   for (const g of clusterSnps(inWindow, y, 1.2)) {
     // The variant's own callout sits on the left at its height, so other markers' labels go right.
     const isVariant = g.some((v) => v.id === t.variant?.id);
-    addDiffMarker(level, level.group, g.map((v) => v.id), new THREE.Vector3(0, y(g[0].pos), 0), 0.62, isVariant ? -0.6 : 0.62, isVariant ? -1.35 : 0);
+    addDiffMarker(level, level.group, g.map((v) => v.id), new THREE.Vector3(0, y(g[0].pos), 0), 0.62, isVariant ? -0.6 : 0.62, isVariant ? -1.9 : 0);
   }
 
   level.anchor.set(0, y(center), 0);
