@@ -72,15 +72,43 @@ function disposeLevels() {
 let eyeColor: EyeColor = 'brown';
 let eyePrevious: EyeColor | null = null;
 
+/**
+ * Changed SNPs that have no marker at the zoom level in view, counted per gene, so the panel can
+ * say where to look. The genome view shows every SNP.
+ */
+function offView(changed: Iterable<string>): { gene: string; count: number }[] {
+  const level = levels[Math.round(t)];
+  const shown = new Set(level?.diffs.flatMap((d) => d.ids) ?? []);
+  const panel = genome.traits[traitKey].panel ?? [];
+  const counts = new Map<string, number>();
+  for (const id of changed) {
+    if (shown.has(id)) continue;
+    const gene = panel.find((v) => v.id === id)!.gene;
+    counts.set(gene, (counts.get(gene) ?? 0) + 1);
+  }
+  return [...counts].map(([gene, count]) => ({ gene, count }));
+}
+
+let lastChanged: string[] = [];
+function updateOffView() {
+  ui.setOffView(offView(lastChanged));
+  // The letter view's own label says so too, since that's where the eye is.
+  const hidden = lastChanged.filter((id) => !levels[4].diffs.some((d) => d.ids.includes(id))).length;
+  (levels[4] as BasesLevel).setElsewhere(hidden ? `+${hidden} more change${hidden > 1 ? 's' : ''} outside this view` : '');
+}
+
 /** Light up the SNPs that differ between the previous and current eye colour, at every level. */
-function applyEye() {
+function applyEye(silent = false) {
   if (traitKey !== 'eye') return;
   const changes = eyePrevious ? diff(PROFILES[eyePrevious], PROFILES[eyeColor]) : new Map();
   const html = new Map<string, DiffLabel>();
   for (const c of changes.values()) html.set(c.id, { gene: c.gene, html: `<b>${c.gene}</b><span>${c.from.join('')} → ${c.to.join('')}</span>` });
   for (const l of levels) setLevelDiff(l, html);
-  (levels[4] as BasesLevel).setAllele(PROFILES[eyeColor].rs12913832[0]);
+  const key = PROFILES[eyeColor].rs12913832;
+  (levels[4] as BasesLevel).setCopies(key[0], key[1], silent);
   ui.setEye(eyeColor, eyePrevious, changes);
+  lastChanged = [...changes.keys()];
+  updateOffView();
 }
 
 // Other traits' pickers: the selected option per trait, and the one it was compared against.
@@ -89,7 +117,7 @@ const picks: Partial<Record<TraitKey, { current: string; previous: string | null
 const copies = (pair: [string, string]) => pair.map((c) => c.replace(/-/g, '–')).join('/');
 
 /** Light up the SNPs that differ between the previous and current picker option, at every level. */
-function applyPick() {
+function applyPick(silent = false) {
   const spec = TRAITS[traitKey].picker;
   if (!spec) return;
   const panel = genome.traits[traitKey].panel ?? [];
@@ -98,8 +126,11 @@ function applyPick() {
   const html = new Map<string, DiffLabel>();
   for (const c of changes.values()) html.set(c.id, { gene: c.gene, html: `<b>${c.gene}</b><span>${copies(c.from)} → ${copies(c.to)}</span>` });
   for (const l of levels) setLevelDiff(l, html);
-  (levels[4] as BasesLevel).setAllele(spec.profiles[st.current][spec.helix][0]);
+  const key = spec.profiles[st.current][spec.helix];
+  (levels[4] as BasesLevel).setCopies(key[0], key[1], silent);
   ui.setPick(spec, panel, st.current, st.previous, changes);
+  lastChanged = [...changes.keys()];
+  updateOffView();
 }
 
 function setTrait(k: TraitKey) {
@@ -108,8 +139,10 @@ function setTrait(k: TraitKey) {
   levels = buildLevels(k);
   for (const l of levels) world.add(l.group);
   ui.setTrait(TRAITS[k]);
-  applyEye();
-  applyPick();
+  lastChanged = [];
+  // Restoring a trait's last pick is not a new change, so no animation.
+  applyEye(true);
+  applyPick(true);
   shownLevel = -1;
 }
 
@@ -207,7 +240,7 @@ const ui = createUI({
     applyPick();
   },
   onAllele(b) {
-    (levels[4] as BasesLevel).setAllele(b);
+    (levels[4] as BasesLevel).setCopies(b);
   },
 });
 
@@ -341,6 +374,7 @@ renderer.setAnimationLoop(() => {
   const idx = Math.round(t);
   if (idx !== shownLevel) {
     shownLevel = idx;
+    updateOffView();
     ui.setLevel(idx);
   }
   ui.setProgress(t, spanAt(t));
